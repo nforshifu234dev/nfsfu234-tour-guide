@@ -147,7 +147,15 @@ export default function Tour({
     return targetElement;
   };
 
-  // Get step content based on device
+  /**
+   * Returns the content of the step based on the device mode.
+   * If the `contentMobile` property is set and the device is mobile, it returns
+   * `contentMobile`. If the `contentDesktop` property is set and the device is
+   * desktop, it returns `contentDesktop`. Otherwise, it returns the `content`
+   * property.
+   * @param step The step object
+   * @returns The content of the step
+   */
   const getStepContent = (step: TourStep): string => {
     if (isMobile && step.contentMobile) {
       return step.contentMobile;
