@@ -1,0 +1,23 @@
+/* Import Tailwind CSS v4 */
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+.tour-highlight {
+  position: relative !important;
+  z-index: 100002 !important;
+  box-shadow: 0 0 12px 4px rgba(255, 255, 255, 1) !important;
+  border: 3px solid rgba(255, 255, 255, 1) !important;
+  border-radius: 6px !important;
+  transition: all 0.3s ease !important;
+}
+
+.tour-highlight:not(.dark) {
+  box-shadow: 0 0 12px 4px rgba(0, 0, 0, 0.8) !important;
+  border: 3px solid rgba(0, 0, 0, 0.9) !important;
+}
+
+.dark .tour-highlight {
+  box-shadow: 0 0 12px 4px rgba(255, 255, 255, 1) !important;
+  border: 3px solid rgba(255, 255, 255, 1) !important;
+}
+
