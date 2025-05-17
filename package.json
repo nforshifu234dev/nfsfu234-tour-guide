@@ -30,7 +30,8 @@
     "build:css": "postcss src/index.css -o dist/index.css",
     "build": "npm run build:js && npm run build:css",
     "prepare": "npm run build",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "test": "echo \"No tests yet, skipping...\" && exit 0"
   },
   "engines": {
     "node": ">=14.0.0"
