@@ -30,17 +30,16 @@ jobs:
 
       - name: Run Standard Version and Push Tags
         env:
-            PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
+          PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
-            git config --global user.email "bot@nforshifu234.dev"
-            git config --global user.name "NFORSHIFU234-Bot"
-            
-            # 👇 SET REMOTE FIRST
-            git remote set-url origin https://x-access-token:${PAT_TOKEN}@github.com/${{ github.repository }}.git
+          git config --global user.email "bot@nforshifu234.dev"
+          git config --global user.name "NFORSHIFU234-Bot"
 
-            # ✅ Then run release and push
-            npm run release
-            git push --follow-tags origin main
+          git remote set-url origin https://x-access-token:${PAT_TOKEN}@github.com/${{ github.repository }}.git
+
+          npm run release
+
+          git push --follow-tags origin main
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
@@ -48,4 +47,5 @@ jobs:
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
 
