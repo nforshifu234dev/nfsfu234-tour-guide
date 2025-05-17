@@ -66,6 +66,29 @@ export interface TourProps {
   showProgressDots?: boolean;
 }
 
+/**
+ * A React component that renders an interactive guided tour.
+ *
+ * Props:
+ * - tourId: A unique identifier for the tour.
+ * - steps: An array of TourStep objects, each defining a step in the tour.
+ * - theme: The theme of the tour, either 'light' or 'dark'.
+ * - deviceMode: The device mode, can be 'desktop', 'tablet', or 'mobile'.
+ * - isActive: A boolean to indicate whether the tour is currently active.
+ * - onComplete: A callback function to be called when the tour is completed.
+ * - onSkip: A callback function to be called when the tour is skipped.
+ * - onStart: A callback function to be called when the tour is started.
+ * - onStepChange: A callback function to be called when the tour step changes.
+ * - welcomeScreen: An object containing welcome screen settings.
+ * - buttonLabels: An object defining custom labels for navigation buttons.
+ * - showProgressDots: A boolean to show or hide progress dots.
+ *
+ * The component manages the current step, visibility, and positioning of
+ * tooltips. It also supports keyboard navigation and filters steps based on
+ * the device mode. The tour can include a welcome screen, and it handles
+ * transitions between steps with animations.
+ */
+
 export default function Tour({
   tourId, // eslint-disable-line @typescript-eslint/no-unused-vars
   steps = [],
