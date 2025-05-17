@@ -30,11 +30,11 @@ jobs:
 
       - name: Run Standard Version and Push Tags
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
-          npm run release
-          git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/nforshifu234dev/nfsfu234-tour-guide.git
-          git push --follow-tags origin main
+            npm run release
+            git remote set-url origin https://x-access-token:${PAT_TOKEN}@github.com/nforshifu234dev/nfsfu234-tour-guide.git
+            git push --follow-tags origin main
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
