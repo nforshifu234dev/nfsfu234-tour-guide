@@ -29,9 +29,12 @@ jobs:
           git config --global user.name "NFORSHIFU234 Dev Release Bot"
 
       - name: Run Standard Version and Push Tags
+        env:
+            PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
-          npm run release
-          git push --follow-tags origin main
+            npm run release
+            git remote set-url origin https://x-access-token:${PAT_TOKEN}@github.com/nforshifu234dev/nfsfu234-tour-guide.git
+            git push --follow-tags origin main
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
@@ -39,3 +42,4 @@ jobs:
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
