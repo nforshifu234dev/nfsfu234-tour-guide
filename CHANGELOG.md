@@ -1,6 +1,8 @@
 # Changelog
 
-All notable changes to `nfsfu234-tour-guide` will be documented in this file.
+All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
+
+### [0.2.1](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v0.2.0...v0.2.1) (2025-05-17)
 
 ## [0.1.0] - 2025-05-17
 
