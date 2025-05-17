@@ -147,6 +147,7 @@ export default function Tour({
     return targetElement;
   };
 
+  
   /**
    * Returns the content of the step based on the device mode.
    * If the `contentMobile` property is set and the device is mobile, it returns
