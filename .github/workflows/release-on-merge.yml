@@ -14,6 +14,8 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Ensure full history for standard-version to generate changelog
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -30,15 +32,10 @@ jobs:
 
       - name: Run Standard Version and Push Tags
         env:
-          PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
-          git config --global user.email "bot@nforshifu234.dev"
-          git config --global user.name "NFORSHIFU234-Bot"
-
-          git remote set-url origin https://x-access-token:${PAT_TOKEN}@github.com/${{ github.repository }}.git
-
+          git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git
           npm run release
-
           git push --follow-tags origin main
 
       - name: Create GitHub Release
@@ -47,5 +44,3 @@ jobs:
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-
