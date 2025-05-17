@@ -11,11 +11,14 @@ jobs:
   release:
     if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # Grant write access to the GITHUB_TOKEN
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Ensure full history for standard-version to generate changelog
+          fetch-depth: 0  # Ensure full history for standard-version
+          token: ${{ secrets.PAT_TOKEN }}  # Use PAT explicitly
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
