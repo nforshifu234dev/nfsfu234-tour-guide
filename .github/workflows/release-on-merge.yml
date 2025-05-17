@@ -32,11 +32,18 @@ jobs:
         env:
             PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
+            git config --global user.email "bot@nforshifu234.dev"
+            git config --global user.name "NFORSHIFU234-Bot"
+            
+            # 👇 SET REMOTE FIRST
+            git remote set-url origin https://x-access-token:${PAT_TOKEN}@github.com/${{ github.repository }}.git
+
+            # ✅ Then run release and push
             npm run release
-            git remote set-url origin https://x-access-token:${PAT_TOKEN}@github.com/nforshifu234dev/nfsfu234-tour-guide.git
             git push --follow-tags origin main
 
-            
+
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
