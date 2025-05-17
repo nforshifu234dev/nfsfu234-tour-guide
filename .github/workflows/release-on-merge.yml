@@ -36,7 +36,6 @@ jobs:
             git remote set-url origin https://x-access-token:${PAT_TOKEN}@github.com/nforshifu234dev/nfsfu234-tour-guide.git
             git push --follow-tags origin main
 
-
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
