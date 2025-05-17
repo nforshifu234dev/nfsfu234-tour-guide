@@ -71,13 +71,13 @@ jobs:
     if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: write  # Grant write access to the GITHUB_TOKEN
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
-          token: ${{ secrets.PAT_TOKEN }}
+          fetch-depth: 0  # Ensure full history for standard-version
+          token: ${{ secrets.PAT_TOKEN }}  # Use PAT explicitly
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -93,13 +93,14 @@ jobs:
           git config --global user.name "NFORSHIFU234 Dev Release Bot"
 
       - name: Run Standard Version and Push Tags
-        id: standard-version
+        id: standard-version  # Add an ID to capture outputs
         env:
           GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
           git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git
           npm run release
           git push --follow-tags origin main
+          # Extract the new tag from package.json after version bump
           NEW_TAG=v$(node -p "require('./package.json').version")
           echo "tag_name=$NEW_TAG" >> $GITHUB_OUTPUT
 
@@ -110,8 +111,7 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: ${{ steps.standard-version.outputs.tag_name }}
-          name: NFSFU234TourGuide@${{ steps.standard-version.outputs.tag_name }}
+          tag_name: ${{ steps.standard-version.outputs.tag_name }}  # Use the captured tag
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
