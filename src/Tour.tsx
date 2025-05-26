@@ -1,14 +1,24 @@
 'use client';
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
-import './index.css'; // Replace './styles.css'
 
 // Interface for predefined welcome screen configuration
 export interface PredefinedWelcomeConfig {
   title: string;
   message: string;
   startButtonText?: string;
+  position?: {
+    top?: number | string; // e.g., 200, '200px', '50%'
+    left?: number | string; // e.g., 300, '300px', '50%'
+    transform?: string; // e.g., 'translate(-50%, -50%)'
+  };
+  mobilePosition?: {
+    top?: number | string;
+    left?: number | string;
+    transform?: string;
+  };
 }
 
 // Interface for TourStep with offset for fine-tuning
@@ -67,30 +77,12 @@ export interface TourProps {
 }
 
 /**
- * A React component that renders an interactive guided tour.
- *
- * Props:
- * - tourId: A unique identifier for the tour.
- * - steps: An array of TourStep objects, each defining a step in the tour.
- * - theme: The theme of the tour, either 'light' or 'dark'.
- * - deviceMode: The device mode, can be 'desktop', 'tablet', or 'mobile'.
- * - isActive: A boolean to indicate whether the tour is currently active.
- * - onComplete: A callback function to be called when the tour is completed.
- * - onSkip: A callback function to be called when the tour is skipped.
- * - onStart: A callback function to be called when the tour is started.
- * - onStepChange: A callback function to be called when the tour step changes.
- * - welcomeScreen: An object containing welcome screen settings.
- * - buttonLabels: An object defining custom labels for navigation buttons.
- * - showProgressDots: A boolean to show or hide progress dots.
- *
- * The component manages the current step, visibility, and positioning of
- * tooltips. It also supports keyboard navigation and filters steps based on
- * the device mode. The tour can include a welcome screen, and it handles
- * transitions between steps with animations.
+ * A React component that renders an interactive guided tour with bulletproof z-index handling.
+ * Uses React portals to render outside the normal DOM hierarchy, preventing any z-index conflicts.
+ * Styled with Tailwind CSS, with dynamic highlight styles injected for theme support.
  */
-
 export default function Tour({
-  tourId, // eslint-disable-line @typescript-eslint/no-unused-vars
+  tourId,
   steps = [],
   theme,
   deviceMode,
@@ -109,13 +101,74 @@ export default function Tour({
   const [tooltipTransform, setTooltipTransform] = useState<string>('');
   const [arrowStyle, setArrowStyle] = useState<React.CSSProperties>({});
   const [navigationDirection, setNavigationDirection] = useState<'forward' | 'backward' | null>(null);
+  const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(null);
+  const [welcomeStyle, setWelcomeStyle] = useState<React.CSSProperties>({});
 
-  // Detect if we’re on mobile
+  // Create and manage portal container
+  useEffect(() => {
+    const container = document.createElement('div');
+    container.id = `tour-portal-${tourId}`;
+    container.className = 'fixed inset-0 pointer-events-none z-[2147483647]';
+    document.body.appendChild(container);
+    setPortalContainer(container);
+
+    return () => {
+      if (container && container.parentNode) {
+        container.parentNode.removeChild(container);
+      }
+    };
+  }, [tourId]);
+
+  // Inject dynamic styles for highlight effect
+  useEffect(() => {
+    if (!isVisible) return;
+
+    const styleId = `tour-styles-${tourId}`;
+    let existingStyle = document.getElementById(styleId);
+
+    if (!existingStyle) {
+      const style = document.createElement('style');
+      style.id = styleId;
+      style.textContent = `
+        .tour-highlight-${tourId} {
+          position: relative !important;
+          z-index: 2147483646 !important;
+          box-shadow: 0 0 8px 2px rgba(29, 78, 216, 0.5) !important; /* Light theme: bg-blue-700 */
+          border: 2px solid rgba(29, 78, 216, 0.7) !important;
+          border-radius: 6px !important;
+          transition: all 0.3s ease !important;
+        }
+
+        .tour-overlay-${tourId} {
+          pointer-events: auto !important;
+        }
+
+        .tour-content-${tourId} {
+          pointer-events: auto !important;
+        }
+
+        [data-theme="dark"] .tour-highlight-${tourId}, .dark .tour-highlight-${tourId} {
+          box-shadow: 0 0 8px 2px rgba(37, 99, 235, 0.5) !important; /* Dark theme: bg-blue-600 */
+          border: 2px solid rgba(37, 99, 235, 0.7) !important;
+        }
+      `;
+      document.head.appendChild(style);
+    }
+
+    return () => {
+      const style = document.getElementById(styleId);
+      if (style && style.parentNode) {
+        style.parentNode.removeChild(style);
+      }
+    };
+  }, [isVisible, tourId]);
+
+  // Detect if we're on mobile
   const isMobile =
     deviceMode === 'mobile' ||
     (typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches);
 
-  // Filter steps based on device to prevent skipping irrelevant steps
+  // Filter steps based on device
   const filteredSteps = useMemo(() => {
     return steps.filter((step) => {
       if (!step.device || step.device === 'both') return true;
@@ -130,6 +183,78 @@ export default function Tour({
       onStart?.();
     }
   }, [isActive, welcomeScreen.enabled, currentStep, onStart]);
+
+  // Handle responsive welcome screen positioning
+  useEffect(() => {
+    if (!isVisible || currentStep !== -1 || !welcomeScreen.enabled) return;
+
+    const updateResponsiveStyles = () => {
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+
+      // Welcome screen styles
+      const config = welcomeScreen.content as PredefinedWelcomeConfig;
+      const hasCustomPosition = config?.position || (isMobile && config?.mobilePosition);
+
+      if (hasCustomPosition) {
+        // Default center position (50% viewport)
+        let defaultTop = viewportHeight * 0.5;
+        let defaultLeft = viewportWidth * 0.5;
+        let transform = 'translate(-50%, -50%)';
+
+        // User-provided offsets
+        let userTop: number | string = isMobile && config.mobilePosition?.top ? config.mobilePosition.top : config.position?.top ?? 0;
+        let userLeft: number | string = isMobile && config.mobilePosition?.left ? config.mobilePosition.left : config.position?.left ?? 0;
+        let userTransform = isMobile && config.mobilePosition?.transform ? config.mobilePosition.transform : config.position?.transform;
+
+        // Convert userTop and userLeft to pixels
+        if (typeof userTop === 'string') {
+          if (userTop.endsWith('rem')) {
+            userTop = parseFloat(userTop) * 16;
+          } else if (userTop.endsWith('%')) {
+            userTop = (parseFloat(userTop) / 100) * viewportHeight;
+          } else if (userTop.endsWith('px')) {
+            userTop = parseFloat(userTop);
+          }
+        }
+        if (typeof userLeft === 'string') {
+          if (userLeft.endsWith('rem')) {
+            userLeft = parseFloat(userLeft) * 16;
+          } else if (userLeft.endsWith('%')) {
+            userLeft = (parseFloat(userLeft) / 100) * viewportWidth;
+          } else if (userLeft.endsWith('px')) {
+            userLeft = parseFloat(userLeft);
+          }
+        }
+
+        // Calculate new position: default + offset
+        let top = defaultTop + (typeof userTop === 'number' ? userTop : 0);
+        let left = defaultLeft + (typeof userLeft === 'number' ? userLeft : 0);
+
+        // Boundary checks
+        const welcomeWidth = Math.min(viewportWidth * 0.9, 448); // w-[90%] or max-w-md
+        const welcomeHeight = 300; // Approximate height
+        if (top < 10) top = 10;
+        if (top + welcomeHeight > viewportHeight - 10) top = viewportHeight - welcomeHeight - 10;
+        if (left < 10) left = 10;
+        if (left + welcomeWidth > viewportWidth - 10) left = viewportWidth - welcomeWidth - 10;
+
+        setWelcomeStyle({
+          position: 'absolute',
+          top,
+          left,
+          transform: userTransform ?? transform,
+        });
+      } else {
+        // Default: rely on Flexbox centering
+        setWelcomeStyle({});
+      }
+    };
+
+    updateResponsiveStyles();
+    window.addEventListener('resize', updateResponsiveStyles);
+    return () => window.removeEventListener('resize', updateResponsiveStyles);
+  }, [isVisible, currentStep, welcomeScreen, isMobile]);
 
   // Find the target element
   const getTargetElement = (step: TourStep): Element | null => {
@@ -147,16 +272,6 @@ export default function Tour({
     return targetElement;
   };
 
-  
-  /**
-   * Returns the content of the step based on the device mode.
-   * If the `contentMobile` property is set and the device is mobile, it returns
-   * `contentMobile`. If the `contentDesktop` property is set and the device is
-   * desktop, it returns `contentDesktop`. Otherwise, it returns the `content`
-   * property.
-   * @param step The step object
-   * @returns The content of the step
-   */
   const getStepContent = (step: TourStep): string => {
     if (isMobile && step.contentMobile) {
       return step.contentMobile;
@@ -166,7 +281,6 @@ export default function Tour({
     return step.content;
   };
 
-  // Create arrow style using CSS triangles with the tip pointing toward the target
   const createArrowStyle = (
     position: string,
     rect: DOMRect,
@@ -181,10 +295,10 @@ export default function Tour({
       width: '0',
       height: '0',
       borderStyle: 'solid',
-      zIndex: -1,
+      zIndex: 1,
     };
 
-    const triangleColor = theme === 'dark' ? '#fff' : '#111827';
+    const triangleColor = theme === 'dark' ? '#ffffff' : '#111827';
     let arrow: React.CSSProperties = { ...baseArrow };
 
     const borderRadiusOffset = '16px';
@@ -199,7 +313,7 @@ export default function Tour({
           borderWidth: '7px 7px 0 7px',
           borderColor: `${triangleColor} transparent transparent transparent`,
           transform: 'translateX(-50%)',
-          boxShadow: '2px 2px 3px rgba(0, 0, 0, 0.1)',
+          filter: 'drop-shadow(2px 2px 3px rgba(0, 0, 0, 0.1))',
         };
         break;
       case 'top-left':
@@ -210,7 +324,7 @@ export default function Tour({
           borderWidth: '7px 7px 0 7px',
           borderColor: `${triangleColor} transparent transparent transparent`,
           transform: 'translateX(-50%)',
-          boxShadow: '2px 2px 3px rgba(0, 0, 0, 0.1)',
+          filter: 'drop-shadow(2px 2px 3px rgba(0, 0, 0, 0.1))',
         };
         break;
       case 'top-right':
@@ -221,7 +335,7 @@ export default function Tour({
           borderWidth: '7px 7px 0 7px',
           borderColor: `${triangleColor} transparent transparent transparent`,
           transform: 'translateX(-50%)',
-          boxShadow: '2px 2px 3px rgba(0, 0, 0, 0.1)',
+          filter: 'drop-shadow(2px 2px 3px rgba(0, 0, 0, 0.1))',
         };
         break;
       case 'bottom':
@@ -232,7 +346,7 @@ export default function Tour({
           borderWidth: '0 7px 7px 7px',
           borderColor: `transparent transparent ${triangleColor} transparent`,
           transform: 'translateX(-50%)',
-          boxShadow: '-1px -1px 3px rgba(0, 0, 0, 0.1)',
+          filter: 'drop-shadow(-1px -1px 3px rgba(0, 0, 0, 0.1))',
         };
         break;
       case 'bottom-left':
@@ -243,7 +357,7 @@ export default function Tour({
           borderWidth: '0 7px 7px 7px',
           borderColor: `transparent transparent ${triangleColor} transparent`,
           transform: 'translateX(-50%)',
-          boxShadow: '-1px -1px 3px rgba(0, 0, 0, 0.1)',
+          filter: 'drop-shadow(-1px -1px 3px rgba(0, 0, 0, 0.1))',
         };
         break;
       case 'bottom-right':
@@ -254,7 +368,7 @@ export default function Tour({
           borderWidth: '0 7px 7px 7px',
           borderColor: `transparent transparent ${triangleColor} transparent`,
           transform: 'translateX(-50%)',
-          boxShadow: '-1px -1px 3px rgba(0, 0, 0, 0.1)',
+          filter: 'drop-shadow(-1px -1px 3px rgba(0, 0, 0, 0.1))',
         };
         break;
       case 'left':
@@ -265,7 +379,7 @@ export default function Tour({
           borderWidth: '7px 7px 7px 0',
           borderColor: `transparent ${triangleColor} transparent transparent`,
           transform: 'translateY(-50%)',
-          boxShadow: '2px -1px 3px rgba(0, 0, 0, 0.1)',
+          filter: 'drop-shadow(2px -1px 3px rgba(0, 0, 0, 0.1))',
         };
         break;
       case 'center-left':
@@ -276,7 +390,7 @@ export default function Tour({
           borderWidth: '7px 0 7px 7px',
           borderColor: `transparent transparent transparent ${triangleColor}`,
           transform: 'translateY(-50%)',
-          boxShadow: '-1px 2px 3px rgba(0, 0, 0, 0.1)',
+          filter: 'drop-shadow(-1px 2px 3px rgba(0, 0, 0, 0.1))',
         };
         break;
       case 'right':
@@ -287,7 +401,7 @@ export default function Tour({
           borderWidth: '7px 0 7px 7px',
           borderColor: `transparent transparent transparent ${triangleColor}`,
           transform: 'translateY(-50%)',
-          boxShadow: '-1px 2px 3px rgba(0, 0, 0, 0.1)',
+          filter: 'drop-shadow(-1px 2px 3px rgba(0, 0, 0, 0.1))',
         };
         break;
       case 'center-right':
@@ -298,7 +412,7 @@ export default function Tour({
           borderWidth: '7px 7px 7px 0',
           borderColor: `transparent ${triangleColor} transparent transparent`,
           transform: 'translateY(-50%)',
-          boxShadow: '2px -1px 3px rgba(0, 0, 0, 0.1)',
+          filter: 'drop-shadow(2px -1px 2px rgba(0, 0, 0, 0.1))',
         };
         break;
     }
@@ -306,7 +420,7 @@ export default function Tour({
     return arrow;
   };
 
-  // Position the tooltip and scroll to the target element
+  // Position tooltip and handle scroll/resize
   useEffect(() => {
     if (!isVisible || currentStep < 0 || currentStep >= filteredSteps.length) return;
 
@@ -315,9 +429,7 @@ export default function Tour({
 
     if (!targetElement) {
       console.warn(
-        `Tour target not found: ${step.target} (device: ${step.device || 'both'}, step: ${currentStep + 1}/${
-          filteredSteps.length
-        })`
+        `Tour target not found: ${step.target} (device: ${step.device || 'both'}, step: ${currentStep + 1}/${filteredSteps.length})`
       );
       if (navigationDirection !== 'backward' && currentStep < filteredSteps.length - 1) {
         setNavigationDirection('forward');
@@ -326,113 +438,128 @@ export default function Tour({
       return;
     }
 
-    targetElement.scrollIntoView({
-      behavior: 'smooth',
-      block: 'nearest',
-      inline: 'nearest',
-    });
-
-    const headerHeight = 64;
-    const rect = targetElement.getBoundingClientRect();
-    if (rect.top < headerHeight) {
-      window.scrollBy({
-        top: rect.top - headerHeight,
+    const updatePosition = () => {
+      targetElement.scrollIntoView({
         behavior: 'smooth',
+        block: 'nearest',
+        inline: 'nearest',
       });
-    }
 
-    if (step.customPosition) {
-      setTooltipPosition({
-        top: step.customPosition.top ?? '50%',
-        left: step.customPosition.left ?? '50%',
-      });
-      setTooltipTransform(step.customPosition.transform ?? '');
-      setArrowStyle({ display: 'none' });
-      return;
-    }
+      const headerHeight = 64;
+      const rect = targetElement.getBoundingClientRect();
+      if (rect.top < headerHeight) {
+        window.scrollBy({
+          top: rect.top - headerHeight,
+          behavior: 'smooth',
+        });
+      }
 
-    if (step.position === 'center') {
-      setArrowStyle({ display: 'none' });
-      return;
-    }
+      if (step.customPosition) {
+        setTooltipPosition({
+          top: step.customPosition.top ?? '50%',
+          left: step.customPosition.left ?? '50%',
+        });
+        setTooltipTransform(step.customPosition.transform ?? '');
+        setArrowStyle({ display: 'none' });
+        return;
+      }
 
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
-    const tooltipWidth = 320;
-    const tooltipHeight = 150;
-    let top: number = 0;
-    let left: number = 0;
-    let transform = '';
-    const position = step.position || 'bottom';
-    const offsetX = step.offset?.x || 0;
-    const offsetY = step.offset?.y || 0;
+      if (step.position === 'center') {
+        setTooltipPosition({ top: '50%', left: '50%' });
+        setTooltipTransform('translate(-50%, -50%)');
+        setArrowStyle({ display: 'none' });
+        return;
+      }
 
-    const targetCenterX = rect.left + rect.width / 2;
-    const targetCenterY = rect.top + rect.height / 2;
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      const tooltipWidth = 320;
+      const tooltipHeight = 150;
+      let top: number = 0;
+      let left: number = 0;
+      let transform = '';
+      const position = step.position || 'bottom';
+      const offsetX = step.offset?.x || 0;
+      const offsetY = step.offset?.y || 10;
 
-    switch (position) {
-      case 'top':
-        top = rect.top - tooltipHeight - 10 + offsetY;
-        left = rect.left + rect.width / 2 + offsetX;
-        transform = 'translateX(-50%)';
-        break;
-      case 'top-left':
-        top = rect.top - tooltipHeight - 10 + offsetY;
-        left = rect.left + offsetX;
-        transform = '';
-        break;
-      case 'top-right':
-        top = rect.top - tooltipHeight - 10 + offsetY;
-        left = rect.right - tooltipWidth + offsetX;
-        transform = '';
-        break;
-      case 'bottom':
-        top = rect.bottom + 10 + offsetY;
-        left = rect.left + rect.width / 2 + offsetX;
-        transform = 'translateX(-50%)';
-        break;
-      case 'bottom-left':
-        top = rect.bottom + 10 + offsetY;
-        left = rect.left + offsetX;
-        transform = '';
-        break;
-      case 'bottom-right':
-        top = rect.bottom + 10 + offsetY;
-        left = rect.right - tooltipWidth + offsetX;
-        transform = '';
-        break;
-      case 'left':
-        top = rect.top + rect.height / 2 + offsetY;
-        left = rect.left - tooltipWidth - 10 + offsetX;
-        transform = 'translateY(-50%)';
-        break;
-      case 'center-left':
-        top = rect.top + rect.height / 2 + offsetY;
-        left = rect.left + offsetX;
-        transform = 'translateY(-50%)';
-        break;
-      case 'right':
-        top = rect.top + rect.height / 2 + offsetY;
-        left = rect.right + 10 + offsetX;
-        transform = 'translateY(-50%)';
-        break;
-      case 'center-right':
-        top = rect.top + rect.height / 2 + offsetY;
-        left = rect.right - tooltipWidth + offsetX;
-        transform = 'translateY(-50%)';
-        break;
-    }
+      const targetCenterX = rect.left + rect.width / 2;
+      const targetCenterY = rect.top + rect.height / 2;
 
-    if (top < 10) top = 10;
-    if (top + tooltipHeight > viewportHeight - 10) top = viewportHeight - tooltipHeight - 10;
-    if (left < 10) left = 10;
-    if (left + tooltipWidth > viewportWidth - 10) left = viewportWidth - tooltipWidth - 10;
+      switch (position) {
+        case 'top':
+          top = rect.top - tooltipHeight - offsetY;
+          left = rect.left + rect.width / 2 + offsetX;
+          transform = 'translateX(-50%)';
+          break;
+        case 'top-left':
+          top = rect.top - tooltipHeight - offsetY;
+          left = rect.left + offsetX;
+          transform = '';
+          break;
+        case 'top-right':
+          top = rect.top - tooltipHeight - offsetY;
+          left = rect.right - tooltipWidth + offsetX;
+          transform = '';
+          break;
+        case 'bottom':
+          top = rect.bottom + offsetY;
+          left = rect.left + rect.width / 2 + offsetX;
+          transform = 'translateX(-50%)';
+          break;
+        case 'bottom-left':
+          top = rect.bottom + offsetY;
+          left = rect.left + offsetX;
+          transform = '';
+          break;
+        case 'bottom-right':
+          top = rect.bottom + offsetY;
+          left = rect.right - tooltipWidth + offsetX;
+          transform = '';
+          break;
+        case 'left':
+          top = rect.top + rect.height / 2 + offsetY;
+          left = rect.left - tooltipWidth - 10 + offsetX;
+          transform = 'translateY(-50%)';
+          break;
+        case 'center-left':
+          top = rect.top + rect.height / 2 + offsetY;
+          left = rect.left + offsetX;
+          transform = 'translateY(-50%)';
+          break;
+        case 'right':
+          top = rect.top + rect.height / 2 + offsetY;
+          left = rect.right + 10 + offsetX;
+          transform = 'translateY(-50%)';
+          break;
+        case 'center-right':
+          top = rect.top + rect.height / 2 + offsetY;
+          left = rect.right - tooltipWidth + offsetX;
+          transform = 'translateY(-50%)';
+          break;
+      }
 
-    setTooltipPosition({ top, left });
-    setTooltipTransform(transform);
+      if (top < 10) top = 10;
+      if (top + tooltipHeight > viewportHeight - 10) top = viewportHeight - tooltipHeight - 10;
+      if (left < 10) left = 10;
+      if (left + tooltipWidth > viewportWidth - 10) left = viewportWidth - tooltipWidth - 10;
 
-    const arrow = createArrowStyle(position, rect, targetCenterX, targetCenterY, left, tooltipWidth, theme);
-    setArrowStyle(arrow);
+      setTooltipPosition({ top, left });
+      setTooltipTransform(transform);
+
+      const arrow = createArrowStyle(position, rect, targetCenterX, targetCenterY, left, tooltipWidth, theme);
+      setArrowStyle(arrow);
+    };
+
+    updatePosition();
+
+    const handleResizeOrScroll = () => updatePosition();
+    window.addEventListener('resize', handleResizeOrScroll);
+    window.addEventListener('scroll', handleResizeOrScroll);
+
+    return () => {
+      window.removeEventListener('resize', handleResizeOrScroll);
+      window.removeEventListener('scroll', handleResizeOrScroll);
+    };
   }, [currentStep, filteredSteps, isVisible, deviceMode, theme, navigationDirection]);
 
   // Highlight the target element
@@ -443,11 +570,13 @@ export default function Tour({
     const targetElement = getTargetElement(step);
     if (!targetElement) return;
 
-    targetElement.classList.add('tour-highlight');
+    const highlightClass = `tour-highlight-${tourId}`;
+    targetElement.classList.add(highlightClass);
+
     return () => {
-      targetElement.classList.remove('tour-highlight');
+      targetElement.classList.remove(highlightClass);
     };
-  }, [currentStep, filteredSteps, isVisible, deviceMode]);
+  }, [currentStep, filteredSteps, isVisible, tourId]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -482,6 +611,12 @@ export default function Tour({
   }, [currentStep, isVisible, onStepChange]);
 
   // Navigation handlers
+  const completeTour = useCallback(() => {
+    setIsVisible(false);
+    setCurrentStep(welcomeScreen.enabled ? -1 : 0);
+    onComplete?.();
+  }, [onComplete, welcomeScreen.enabled]);
+
   const handleStart = useCallback(() => {
     setCurrentStep(0);
     setNavigationDirection('forward');
@@ -495,7 +630,7 @@ export default function Tour({
     } else {
       completeTour();
     }
-  }, [currentStep, filteredSteps.length]);
+  }, [currentStep, filteredSteps.length, completeTour]);
 
   const handlePrevious = useCallback(() => {
     if (currentStep > 0) {
@@ -507,68 +642,84 @@ export default function Tour({
   const handleSkip = useCallback(() => {
     completeTour();
     onSkip?.();
-  }, [onSkip]);
+  }, [onSkip, completeTour]);
 
-  const completeTour = useCallback(() => {
-    setIsVisible(false);
-    setCurrentStep(welcomeScreen.enabled ? -1 : 0);
-    onComplete?.();
-  }, [onComplete, welcomeScreen.enabled]);
+  if (!isVisible || !portalContainer) return null;
 
-  if (!isVisible) return null;
-
-  // Render welcome screen
-  if (currentStep === -1 && welcomeScreen.enabled) {
-    return (
-      <AnimatePresence>
-        <motion.div
-          className={`fixed inset-0 z-[1000000] overflow-visible ${theme === 'dark' ? 'bg-black/50' : 'bg-black/60'}`}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-        >
+  const tourContent = (
+    <AnimatePresence>
+      <motion.div
+        className={`tour-overlay-${tourId} fixed inset-0 flex items-center justify-center ${
+          theme === 'dark' ? 'bg-black/70' : 'bg-black/60'
+        }`}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        style={{ zIndex: 2147483647 }}
+      >
+        {currentStep === -1 && welcomeScreen.enabled ? (
           <motion.div
-            className={`p-6 rounded-2xl max-w-md w-full mx-auto mt-20 ${
-              theme === 'dark' ? 'bg-white text-gray-900' : 'bg-gray-900 text-gray-100'
-            } shadow-xl ring-1 ring-gray-200/50 dark:ring-gray-700/50 backdrop-blur-sm bg-opacity-90`}
+            className={`tour-content-${tourId} p-6 rounded-2xl w-[90%] max-w-md backdrop-blur-sm bg-opacity-95 shadow-xl ring-1 ${
+              theme === 'dark'
+                ? 'bg-white text-gray-900 ring-gray-200/50'
+                : 'bg-gray-900 text-gray-100 ring-gray-700/50'
+            }`}
+            style={welcomeStyle}
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ duration: 0.3, ease: 'easeOut' }}
+            role="dialog"
+            aria-labelledby={`tour-welcome-title-${tourId}`}
           >
-            {welcomeScreen.content && typeof welcomeScreen.content === 'object' && !Array.isArray(welcomeScreen.content) &&
-            'title' in welcomeScreen.content && 'message' in welcomeScreen.content ? (
+            {welcomeScreen.content &&
+            typeof welcomeScreen.content === 'object' &&
+            !Array.isArray(welcomeScreen.content) &&
+            'title' in welcomeScreen.content &&
+            'message' in welcomeScreen.content ? (
               <>
                 <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-xl font-bold tracking-tight">{(welcomeScreen.content as PredefinedWelcomeConfig).title}</h3>
+                  <h3
+                    id={`tour-welcome-title-${tourId}`}
+                    className="text-xl font-bold tracking-tight"
+                  >
+                    {(welcomeScreen.content as PredefinedWelcomeConfig).title}
+                  </h3>
                   <button
                     onClick={handleSkip}
                     className={`p-2 rounded-full transition-all duration-200 ${
-                      theme === 'dark' ? 'text-gray-500 hover:bg-gray-200 hover:text-gray-700' : 'text-gray-400 hover:bg-gray-700 hover:text-gray-200'
+                      theme === 'dark'
+                        ? 'text-gray-500 hover:bg-gray-200 hover:text-gray-700'
+                        : 'text-gray-400 hover:bg-gray-700 hover:text-gray-200'
                     }`}
+                    aria-label="Skip tour"
                   >
                     <X size={20} />
                   </button>
                 </div>
-                <p className="text-base leading-relaxed mb-6 font-medium">{(welcomeScreen.content as PredefinedWelcomeConfig).message}</p>
+                <p className="text-base leading-relaxed mb-6 font-medium">
+                  {(welcomeScreen.content as PredefinedWelcomeConfig).message}
+                </p>
                 <div className="flex justify-between items-center">
                   <button
                     onClick={handleSkip}
-                    className={`text-sm font-medium ${
+                    className={`text-sm font-medium transition-colors duration-200 ${
                       theme === 'dark' ? 'text-gray-500 hover:text-gray-700' : 'text-gray-400 hover:text-gray-200'
-                    } transition-colors duration-200`}
+                    }`}
                   >
                     {buttonLabels.skip || 'Skip Tour'}
                   </button>
                   <button
                     onClick={handleStart}
-                    className={`px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 ${
+                    className={`px-4 py-2 rounded-lg font-medium text-sm text-white transition-all duration-200 ${
                       theme === 'dark'
-                        ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-500 hover:to-blue-600'
-                        : 'bg-gradient-to-r from-blue-700 to-blue-800 text-white hover:from-blue-600 hover:to-blue-700'
+                        ? 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600'
+                        : 'bg-gradient-to-r from-blue-700 to-blue-800 hover:from-blue-600 hover:to-blue-700'
                     }`}
                   >
-                    {(welcomeScreen.content as PredefinedWelcomeConfig).startButtonText || buttonLabels.start || 'Start Tour'}
+                    {(welcomeScreen.content as PredefinedWelcomeConfig).startButtonText ||
+                      buttonLabels.start ||
+                      'Start Tour'}
                   </button>
                 </div>
               </>
@@ -578,18 +729,18 @@ export default function Tour({
                 <div className="flex justify-between items-center mt-4">
                   <button
                     onClick={handleSkip}
-                    className={`text-sm font-medium ${
+                    className={`text-sm font-medium transition-colors duration-200 ${
                       theme === 'dark' ? 'text-gray-500 hover:text-gray-700' : 'text-gray-400 hover:text-gray-200'
-                    } transition-colors duration-200`}
+                    }`}
                   >
                     {buttonLabels.skip || 'Skip Tour'}
                   </button>
                   <button
                     onClick={handleStart}
-                    className={`px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 ${
+                    className={`px-4 py-2 rounded-lg font-medium text-sm text-white transition-all duration-200 ${
                       theme === 'dark'
-                        ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-500 hover:to-blue-600'
-                        : 'bg-gradient-to-r from-blue-700 to-blue-800 text-white hover:from-blue-600 hover:to-blue-700'
+                        ? 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600'
+                        : 'bg-gradient-to-r from-blue-700 to-blue-800 hover:from-blue-600 hover:to-blue-700'
                     }`}
                   >
                     {buttonLabels.start || 'Start Tour'}
@@ -598,192 +749,238 @@ export default function Tour({
               </>
             )}
           </motion.div>
-        </motion.div>
-      </AnimatePresence>
-    );
-  }
-
-  if (currentStep >= filteredSteps.length) return null;
-
-  const step = filteredSteps[currentStep];
-  const content = getStepContent(step);
-
-  return (
-    <AnimatePresence>
-      <motion.div
-        className={`fixed inset-0 z-[1000000] overflow-visible ${theme === 'dark' ? 'bg-black/50' : 'bg-black/60'}`}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-      >
-        {step.position === 'center' ? (
-          <motion.div
-            className={`p-6 rounded-2xl max-w-md w-full mx-auto mt-20 ${
-              theme === 'dark' ? 'bg-white text-gray-900' : 'bg-gray-900 text-gray-100'
-            } shadow-xl ring-1 ring-gray-200/50 dark:ring-gray-700/50 backdrop-blur-sm bg-opacity-90`}
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            transition={{ duration: 0.3, ease: 'easeOut' }}
-          >
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold tracking-tight">Welcome to the Tour!</h3>
-              <button
-                onClick={handleSkip}
-                className={`p-2 rounded-full transition-all duration-200 ${
-                  theme === 'dark' ? 'text-gray-500 hover:bg-gray-200 hover:text-gray-700' : 'text-gray-400 hover:bg-gray-700 hover:text-gray-200'
-                }`}
-              >
-                <X size={20} />
-              </button>
-            </div>
-            <p className="text-base leading-relaxed mb-6 font-medium">{content}</p>
-            <div className="mb-4">
-              <div className="relative h-2 bg-gray-200 dark:bg-gray-700 rounded-full">
-                <div
-                  className="absolute h-2 bg-blue-500 rounded-full transition-all duration-300"
-                  style={{ width: `${((currentStep + 1) / filteredSteps.length) * 100}%` }}
-                />
-              </div>
-              {showProgressDots && (
-                <div className="flex justify-center gap-2 mt-2">
-                  {filteredSteps.map((_, index) => (
-                    <div
-                      key={index}
-                      className={`w-2 h-2 rounded-full ${
-                        index === currentStep ? 'bg-blue-500' : theme === 'dark' ? 'bg-gray-400' : 'bg-gray-500'
-                      }`}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-            <div className="flex justify-between items-center">
-              <button
-                onClick={handleSkip}
-                className={`text-sm font-medium ${
-                  theme === 'dark' ? 'text-gray-500 hover:text-gray-700' : 'text-gray-400 hover:text-gray-200'
-                } transition-colors duration-200`}
-              >
-                {buttonLabels.skip || 'Skip Tour'}
-              </button>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={handlePrevious}
-                  disabled={currentStep === 0}
-                  className={`px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 ${
-                    currentStep === 0
-                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                      : theme === 'dark'
-                      ? 'bg-gradient-to-r from-gray-600 to-gray-700 text-white hover:from-gray-500 hover:to-gray-600'
-                      : 'bg-gradient-to-r from-gray-700 to-gray-800 text-white hover:from-gray-600 hover:to-gray-700'
-                  }`}
-                >
-                  {buttonLabels.previous || 'Previous'}
-                </button>
-                <span className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>
-                  {currentStep + 1} / {filteredSteps.length}
-                </span>
-                <button
-                  onClick={handleNext}
-                  className={`px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 ${
-                    theme === 'dark'
-                      ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-500 hover:to-blue-600'
-                      : 'bg-gradient-to-r from-blue-700 to-blue-800 text-white hover:from-blue-600 hover:to-blue-700'
-                  }`}
-                >
-                  {currentStep < filteredSteps.length - 1 ? buttonLabels.next || 'Next' : buttonLabels.finish || 'Finish'}
-                </button>
-              </div>
-            </div>
-          </motion.div>
         ) : (
-          <motion.div
-            className={`absolute p-5 rounded-xl max-w-sm min-w-[200px] ${
-              theme === 'dark' ? 'bg-white text-gray-900' : 'bg-gray-900 text-gray-100'
-            } shadow-xl ring-1 ring-gray-200/50 dark:ring-gray-700/50 backdrop-blur-sm bg-opacity-90`}
-            style={{
-              top: tooltipPosition.top,
-              left: tooltipPosition.left,
-              transform: tooltipTransform,
-              margin: '0 10px',
-            }}
-            initial={{
-              opacity: 0,
-              y: step.position && (step.position as string).includes('top') ? 10 : step.position && (step.position as string).includes('bottom') ? -10 : 0,
-              x: step.position && (step.position as string).includes('left') ? 10 : step.position && (step.position as string).includes('right') ? -10 : 0,
-            }}
-            animate={{ opacity: 1, y: 0, x: 0 }}
-            exit={{
-              opacity: 0,
-              y: step.position && (step.position as string).includes('top') ? 10 : step.position && (step.position as string).includes('bottom') ? -10 : 0,
-              x: step.position && (step.position as string).includes('left') ? 10 : step.position && (step.position as string).includes('right') ? -10 : 0,
-            }}
-            transition={{ duration: 0.3, ease: 'easeOut' }}
-          >
-            <div className="arrow" style={arrowStyle} />
-            <p className="text-base leading-relaxed mb-4 font-medium">{content}</p>
-            <div className="mb-3">
-              <div className="relative h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full">
-                <div
-                  className="absolute h-1.5 bg-blue-500 rounded-full transition-all duration-300"
-                  style={{ width: `${((currentStep + 1) / filteredSteps.length) * 100}%` }}
-                />
-              </div>
-              {showProgressDots && (
-                <div className="flex justify-center gap-1.5 mt-2">
-                  {filteredSteps.map((_, index) => (
-                    <div
-                      key={index}
-                      className={`w-1.5 h-1.5 rounded-full ${
-                        index === currentStep ? 'bg-blue-500' : theme === 'dark' ? 'bg-gray-400' : 'bg-gray-500'
-                      }`}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-            <div className="flex justify-between items-center">
-              <button
-                onClick={handleSkip}
-                className={`text-sm font-medium ${
-                  theme === 'dark' ? 'text-gray-500 hover:text-gray-700' : 'text-gray-400 hover:text-gray-200'
-                } transition-colors duration-200`}
-              >
-                {buttonLabels.skip || 'Skip'}
-              </button>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={handlePrevious}
-                  disabled={currentStep === 0}
-                  className={`px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 ${
-                    currentStep === 0
-                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                      : theme === 'dark'
-                      ? 'bg-gradient-to-r from-gray-600 to-gray-700 text-white hover:from-gray-500 hover:to-gray-600'
-                      : 'bg-gradient-to-r from-gray-700 to-gray-800 text-white hover:from-gray-600 hover:to-gray-700'
-                  }`}
+          currentStep < filteredSteps.length &&
+          (filteredSteps[currentStep].position === 'center' ? (
+            <motion.div
+              className={`tour-content-${tourId} p-6 rounded-2xl max-w-md w-full mx-auto mt-20 backdrop-blur-sm bg-opacity-95 shadow-xl ring-1 ${
+                theme === 'dark'
+                  ? 'bg-white text-gray-900 ring-gray-200/50'
+                  : 'bg-gray-900 text-gray-100 ring-gray-700/50'
+              }`}
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ duration: 0.3, ease: 'easeOut' }}
+              role="dialog"
+              aria-labelledby={`tour-step-title-${tourId}-${currentStep}`}
+            >
+              <div className="flex justify-between items-center mb-4">
+                <h3
+                  id={`tour-step-title-${tourId}-${currentStep}`}
+                  className="text-xl font-bold tracking-tight"
                 >
-                  {buttonLabels.previous || 'Previous'}
-                </button>
-                <span className={`text-xs font-medium ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>
-                  {currentStep + 1} / {filteredSteps.length}
-                </span>
+                  Welcome to the Tour!
+                </h3>
                 <button
-                  onClick={handleNext}
-                  className={`px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 ${
+                  onClick={handleSkip}
+                  className={`p-2 rounded-full transition-all duration-200 ${
                     theme === 'dark'
-                      ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-500 hover:to-blue-600'
-                      : 'bg-gradient-to-r from-blue-700 to-blue-800 text-white hover:from-blue-600 hover:to-blue-700'
+                      ? 'text-gray-500 hover:bg-gray-200 hover:text-gray-700'
+                      : 'text-gray-400 hover:bg-gray-700 hover:text-gray-200'
                   }`}
+                  aria-label="Skip tour"
                 >
-                  {currentStep < filteredSteps.length - 1 ? buttonLabels.next || 'Next' : buttonLabels.finish || 'Finish'}
+                  <X size={20} />
                 </button>
               </div>
-            </div>
-          </motion.div>
+              <p className="text-base leading-relaxed mb-6 font-medium">
+                {getStepContent(filteredSteps[currentStep])}
+              </p>
+              <div className="mb-4">
+                <div className="relative h-2 rounded-full bg-gray-200 dark:bg-gray-700">
+                  <div
+                    className="absolute h-2 bg-blue-500 rounded-full transition-all duration-300"
+                    style={{ width: `${((currentStep + 1) / filteredSteps.length) * 100}%` }}
+                  />
+                </div>
+                {showProgressDots && (
+                  <div className="flex justify-center gap-2 mt-2">
+                    {filteredSteps.map((_, index) => (
+                      <div
+                        key={index}
+                        className={`w-2 h-2 rounded-full ${
+                          index === currentStep
+                            ? 'bg-blue-500'
+                            : theme === 'dark'
+                            ? 'bg-gray-400'
+                            : 'bg-gray-500'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="flex justify-between items-center">
+                <button
+                  onClick={handleSkip}
+                  className={`text-sm font-medium transition-colors duration-200 ${
+                    theme === 'dark' ? 'text-gray-500 hover:text-gray-700' : 'text-gray-400 hover:text-gray-200'
+                  }`}
+                >
+                  {buttonLabels.skip || 'Skip Tour'}
+                </button>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={handlePrevious}
+                    disabled={currentStep === 0}
+                    className={`px-4 py-2 rounded-lg font-medium text-sm text-white transition-all duration-200 ${
+                      currentStep === 0
+                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        : theme === 'dark'
+                        ? 'bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-500 hover:to-gray-600'
+                        : 'bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-600 hover:to-gray-700'
+                    }`}
+                  >
+                    {buttonLabels.previous || 'Previous'}
+                  </button>
+                  <span
+                    className={`text-sm font-medium ${
+                      theme === 'dark' ? 'text-gray-500' : 'text-gray-400'
+                    }`}
+                  >
+                    {currentStep + 1} / {filteredSteps.length}
+                  </span>
+                  <button
+                    onClick={handleNext}
+                    className={`px-4 py-2 rounded-lg font-medium text-sm text-white transition-all duration-200 ${
+                      theme === 'dark'
+                        ? 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600'
+                        : 'bg-gradient-to-r from-blue-700 to-blue-800 hover:from-blue-600 hover:to-blue-700'
+                    }`}
+                  >
+                    {currentStep < filteredSteps.length - 1
+                      ? buttonLabels.next || 'Next'
+                      : buttonLabels.finish || 'Finish'}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div
+              className={`tour-content-${tourId} absolute p-5 rounded-xl max-w-sm min-w-[200px] backdrop-blur-sm bg-opacity-95 shadow-xl ring-1 ${
+                theme === 'dark'
+                  ? 'bg-white text-gray-900 ring-gray-200/50'
+                  : 'bg-gray-900 text-gray-100 ring-gray-700/50'
+              }`}
+              style={{
+                top: tooltipPosition.top,
+                left: tooltipPosition.left,
+                transform: tooltipTransform,
+                margin: '0 10px',
+              }}
+              initial={{
+                opacity: 0,
+                y: filteredSteps[currentStep].position?.includes('top')
+                  ? 10
+                  : filteredSteps[currentStep].position?.includes('bottom')
+                  ? -10
+                  : 0,
+                x: filteredSteps[currentStep].position?.includes('left')
+                  ? 10
+                  : filteredSteps[currentStep].position?.includes('right')
+                  ? -10
+                  : 0,
+              }}
+              animate={{ opacity: 1, y: 0, x: 0 }}
+              exit={{
+                opacity: 0,
+                y: filteredSteps[currentStep].position?.includes('top')
+                  ? 10
+                  : filteredSteps[currentStep].position?.includes('bottom')
+                  ? -10
+                  : 0,
+                x: filteredSteps[currentStep].position?.includes('left')
+                  ? 10
+                  : filteredSteps[currentStep].position?.includes('right')
+                  ? -10
+                  : 0,
+              }}
+              transition={{ duration: 0.3, ease: 'easeOut' }}
+              role="dialog"
+              aria-labelledby={`tour-step-title-${tourId}-${currentStep}`}
+            >
+              <div className="arrow" style={arrowStyle} />
+              <p
+                id={`tour-step-title-${tourId}-${currentStep}`}
+                className="text-base leading-relaxed mb-4 font-medium"
+              >
+                {getStepContent(filteredSteps[currentStep])}
+              </p>
+              <div className="mb-3">
+                <div className="relative h-1.5 rounded-full bg-gray-200 dark:bg-gray-700">
+                  <div
+                    className="absolute h-1.5 bg-blue-500 rounded-full transition-all duration-300"
+                    style={{ width: `${((currentStep + 1) / filteredSteps.length) * 100}%` }}
+                  />
+                </div>
+                {showProgressDots && (
+                  <div className="flex justify-center gap-1.5 mt-2">
+                    {filteredSteps.map((_, index) => (
+                      <div
+                        key={index}
+                        className={`w-1.5 h-1.5 rounded-full ${
+                          index === currentStep
+                            ? 'bg-blue-500'
+                            : theme === 'dark'
+                            ? 'bg-gray-400'
+                            : 'bg-gray-500'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="flex justify-between items-center">
+                <button
+                  onClick={handleSkip}
+                  className={`text-sm font-medium transition-colors duration-200 ${
+                    theme === 'dark' ? 'text-gray-500 hover:text-gray-700' : 'text-gray-400 hover:text-gray-200'
+                  }`}
+                >
+                  {buttonLabels.skip || 'Skip'}
+                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handlePrevious}
+                    disabled={currentStep === 0}
+                    className={`px-3 py-1 rounded-md text-sm font-medium text-white transition-all duration-200 ${
+                      currentStep === 0
+                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        : theme === 'dark'
+                        ? 'bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-500 hover:to-gray-600'
+                        : 'bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-600 hover:to-gray-700'
+                    }`}
+                  >
+                    {buttonLabels.previous || 'Previous'}
+                  </button>
+                  <span
+                    className={`text-xs font-medium ${
+                      theme === 'dark' ? 'text-gray-500' : 'text-gray-400'
+                    }`}
+                  >
+                    {currentStep + 1} / {filteredSteps.length}
+                  </span>
+                  <button
+                    onClick={handleNext}
+                    className={`px-3 py-1 rounded-md text-sm font-medium text-white transition-all duration-200 ${
+                      theme === 'dark'
+                        ? 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600'
+                        : 'bg-gradient-to-r from-blue-700 to-blue-800 hover:from-blue-600 hover:to-blue-700'
+                    }`}
+                  >
+                    {currentStep < filteredSteps.length - 1
+                      ? buttonLabels.next || 'Next'
+                      : buttonLabels.finish || 'Finish'}
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          ))
         )}
       </motion.div>
     </AnimatePresence>
   );
+
+  return createPortal(tourContent, portalContainer);
 }

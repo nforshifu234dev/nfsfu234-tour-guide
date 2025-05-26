@@ -1,0 +1,37 @@
+name: Feature Request
+description: Suggest a new feature for nfsfu234-tour-guide
+title: "[Feature]: "
+labels: ["enhancement", "help wanted"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Describe the Feature
+      description: What feature would you like to see?
+      placeholder: E.g., "Add support for multi-step animations in tooltips."
+    validations:
+      required: true
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Use Case
+      description: How would this feature benefit users or improve the onboarding experience?
+      placeholder: E.g., "This would make tours more engaging by animating transitions between steps."
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Have you considered any alternative solutions or workarounds?
+      placeholder: E.g., "Currently, I use a custom Framer Motion animation, but it’s not reusable."
+    validations:
+      required: false
+  - type: textarea
+    id: additional-info
+    attributes:
+      label: Additional Information
+      description: Share code snippets, mockups, or other details to clarify your request.
+      placeholder: E.g., "A mockup of the proposed animation flow or a code snippet."
+    validations:
+      required: false

@@ -1,0 +1,60 @@
+name: Bug Report
+description: Report a bug in nfsfu234-tour-guide
+title: "[Bug]: "
+labels: ["bug", "help wanted"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Describe the Bug
+      description: Provide a clear description of what went wrong.
+      placeholder: E.g., "The tooltip does not appear when targeting a button on mobile."
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: List the steps to reproduce the bug.
+      placeholder: |
+        1. Use the Tour component with `deviceMode="mobile"`.
+        2. Set a step with `position="bottom"`.
+        3. Observe the tooltip is misaligned.
+    validations:
+      required: true
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected Behavior
+      description: What did you expect to happen?
+      placeholder: E.g., "The tooltip should appear below the target element."
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Library Version
+      description: Which version of nfsfu234-tour-guide are you using?
+      placeholder: E.g., 1.0.0
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Provide details about your environment.
+      placeholder: |
+        - Node.js version: 20.x
+        - Browser: Chrome 126
+        - OS: Windows 11
+        - Other dependencies: react@19.0.0, tailwindcss@4.0.0
+    validations:
+      required: false
+  - type: textarea
+    id: additional-info
+    attributes:
+      label: Additional Information
+      description: Share screenshots, videos, or error logs (if applicable).
+      placeholder: E.g., attach a screenshot of the misaligned tooltip or copy-paste console errors.
+    validations:
+      required: false

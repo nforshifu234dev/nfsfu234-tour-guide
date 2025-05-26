@@ -1,0 +1,57 @@
+name: Welcome First-Time Contributors
+
+on:
+  pull_request:
+    types: [opened]
+  issues:
+    types: [opened]
+
+jobs:
+  welcome:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write        # Required for adding labels to issues 
+      pull-requests: write # Required for adding labels to pull requests
+    steps:
+      - name: Welcome First-Time Contributors
+        uses: actions/first-interaction@v1
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          pr-message: |
+            🎉 **Welcome, @${{ github.actor }}!** Thank you for your first pull request to **nfsfu234-tour-guide**!  
+            We're thrilled to have you contributing to our interactive onboarding library. To make the process smooth, please:  
+            - Ensure your PR follows our [CONTRIBUTING.md](https://github.com/nforshifu234dev/nfsfu234-tour-guide/blob/main/CONTRIBUTING.md) guidelines.  
+            - Use semantic commit messages (e.g., `feat: add new feature`, `fix: resolve bug`).  
+            - Check out [good first issues](https://github.com/nforshifu234dev/nfsfu234-tour-guide/labels/good%20first%20issue) for more beginner-friendly tasks.  
+            A maintainer will review your PR soon. Feel free to ask questions in [GitHub Discussions](https://github.com/nforshifu234dev/nfsfu234-tour-guide/discussions)! 🚀
+          issue-message: |
+            🎉 **Welcome, @${{ github.actor }}!** Thanks for opening your first issue in **nfsfu234-tour-guide**!  
+            Your feedback helps us improve our onboarding library. Please:  
+            - Review our [CONTRIBUTING.md](https://github.com/nforshifu234dev/nfsfu234-tour-guide/blob/main/CONTRIBUTING.md) for contribution guidelines.  
+            - Provide as much detail as possible to help us address your issue.  
+            - Explore [GitHub Discussions](https://github.com/nforshifu234dev/nfsfu234-tour-guide/discussions) for questions or ideas.  
+            We'll respond soon. Thanks for helping make **nfsfu234-tour-guide** better! 😊
+      - name: Add Labels to PRs
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              labels: ['good first issue', 'help wanted']
+            });
+      - name: Add Labels to Issues
+        if: github.event_name == 'issues'
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              labels: ['question', 'help wanted']
+            });
