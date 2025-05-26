@@ -10,7 +10,7 @@ jobs:
   welcome:
     runs-on: ubuntu-latest
     permissions:
-      issues: write        # Required for adding labels to issues
+      issues: write        # Required for adding labels to issues 
       pull-requests: write # Required for adding labels to pull requests
     steps:
       - name: Welcome First-Time Contributors
