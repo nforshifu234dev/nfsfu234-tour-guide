@@ -1,3 +1,5 @@
+# This workflow automates the release process when a pull request is merged into the main branch.
+
 name: Enforce Semantic PR Titles
 
 on:
