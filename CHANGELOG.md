@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.2.11](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v0.2.10...v0.2.11) (2025-06-01)
+
+
+### Bug Fixes
+
+* testing new code ([#25](https://github.com/nforshifu234dev/nfsfu234-tour-guide/issues/25)) ([18b04ba](https://github.com/nforshifu234dev/nfsfu234-tour-guide/commit/18b04ba0d6f0790ebca4aa25f2c652ba2be922a0))
+* testing new code 1 ([#24](https://github.com/nforshifu234dev/nfsfu234-tour-guide/issues/24)) ([0a20af4](https://github.com/nforshifu234dev/nfsfu234-tour-guide/commit/0a20af4e2837a8428f05946d21e272dedad7af46))
+
 ### [0.2.10](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v0.2.9...v0.2.10) (2025-06-01)
 
 
