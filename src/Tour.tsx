@@ -1995,8 +1995,10 @@
 
 
 
+
+
 'use client';
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
@@ -2072,6 +2074,7 @@ export default function Tour({
   const [zIndex, setZIndex] = useState(2147483646);
   const [validSteps, setValidSteps] = useState<TourStep[]>(steps);
   const [isDomReady, setIsDomReady] = useState(false);
+  const highlightedElements = useRef<Map<Element, { originalOverflow: string }>>(new Map());
 
   // Wait for element with retries
   const waitForElement = useCallback((selector: string, timeout = 5000): Promise<Element | null> => {
@@ -2096,13 +2099,11 @@ export default function Tour({
     document.body.appendChild(container);
     setPortalContainer(container);
 
-    // Override body/html overflow to prevent clipping
     const originalBodyOverflow = document.body.style.overflow;
     const originalHtmlOverflow = document.documentElement.style.overflow;
     document.body.style.overflow = 'visible';
     document.documentElement.style.overflow = 'visible';
 
-    // Dynamically adjust z-index based on DOM
     const updateZIndex = () => {
       const elements = document.querySelectorAll('*');
       let maxZIndex = 2147483646;
@@ -2114,7 +2115,6 @@ export default function Tour({
     };
     updateZIndex();
 
-    // Monitor DOM for new elements
     const observer = new MutationObserver(updateZIndex);
     observer.observe(document.body, { childList: true, subtree: true });
 
@@ -2149,7 +2149,6 @@ export default function Tour({
 
     validateSteps();
 
-    // Monitor DOM for dynamic content
     const observer = new MutationObserver(() => validateSteps());
     observer.observe(document.body, { childList: true, subtree: true });
 
@@ -2191,6 +2190,11 @@ export default function Tour({
         [data-theme="dark"] .tour-highlight-${tourId}, .dark .tour-highlight-${tourId} {
           box-shadow: 0 0 8px 2px rgba(37, 99, 235, 0.5) !important;
           border: 2px solid rgba(37, 99, 235, 0.7) !important;
+        }
+        .tour-overlay-${tourId}:not([style*="opacity: 1"]) .tour-highlight-${tourId} {
+          box-shadow: none !important;
+          border: none !important;
+          z-index: auto !important;
         }
       `;
       document.head.appendChild(style);
@@ -2378,6 +2382,19 @@ export default function Tour({
     }
   }, []);
 
+  // Clear all highlights
+  const clearAllHighlights = useCallback(() => {
+    const highlightClass = `tour-highlight-${tourId}`;
+    highlightedElements.current.forEach(({ originalOverflow }, element) => {
+      element.classList.remove(highlightClass);
+      const parent = element.parentElement;
+      if (parent && originalOverflow) {
+        parent.style.overflow = originalOverflow;
+      }
+    });
+    highlightedElements.current.clear();
+  }, [tourId]);
+
   // Position tooltip
   useEffect(() => {
     if (!isVisible || currentStep < 0 || currentStep >= filteredSteps.length || !isDomReady) return;
@@ -2504,7 +2521,10 @@ export default function Tour({
 
   // Highlight target element and adjust parent overflow
   useEffect(() => {
-    if (!isVisible || currentStep < 0 || currentStep >= filteredSteps.length || !isDomReady) return;
+    if (!isVisible || currentStep < 0 || currentStep >= filteredSteps.length || !isDomReady) {
+      clearAllHighlights();
+      return;
+    }
 
     const step = filteredSteps[currentStep];
     let isMounted = true;
@@ -2512,6 +2532,8 @@ export default function Tour({
     const highlightElement = async () => {
       const targetElement = await getTargetElement(step);
       if (!targetElement || !isMounted) return;
+
+      clearAllHighlights();
 
       const highlightClass = `tour-highlight-${tourId}`;
       targetElement.classList.add(highlightClass);
@@ -2525,12 +2547,15 @@ export default function Tour({
         }
       }
 
+      highlightedElements.current.set(targetElement, { originalOverflow });
+
       return () => {
         if (isMounted) {
           targetElement.classList.remove(highlightClass);
           if (parent && originalOverflow) {
             parent.style.overflow = originalOverflow;
           }
+          highlightedElements.current.delete(targetElement);
         }
       };
     };
@@ -2540,7 +2565,7 @@ export default function Tour({
     return () => {
       isMounted = false;
     };
-  }, [currentStep, filteredSteps, isVisible, tourId, getTargetElement, isDomReady]);
+  }, [currentStep, filteredSteps, isVisible, tourId, getTargetElement, isDomReady, clearAllHighlights]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -2576,10 +2601,11 @@ export default function Tour({
 
   // Navigation handlers
   const completeTour = useCallback(() => {
+    clearAllHighlights();
     setIsVisible(false);
     setCurrentStep(welcomeScreen.enabled ? -1 : 0);
     onComplete?.();
-  }, [onComplete, welcomeScreen.enabled]);
+  }, [onComplete, welcomeScreen.enabled, clearAllHighlights]);
 
   const handleStart = useCallback(() => {
     setCurrentStep(0);
@@ -2614,7 +2640,7 @@ export default function Tour({
     <AnimatePresence>
       <motion.div
         className={`tour-overlay-${tourId} fixed inset-0 flex items-center justify-center ${
-          theme === 'dark' ? 'bg-black/70' : 'bg-black/60'
+          theme === 'dark' ? 'bg-gray-900/80' : 'bg-gray-900/60'
         }`}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -2624,12 +2650,12 @@ export default function Tour({
         {currentStep === -1 && welcomeScreen.enabled ? (
           <motion.div
             className={`tour-content-${tourId} p-6 rounded-xl w-[90%] max-w-md backdrop-blur-sm shadow-lg ring-1 ${
-              theme === 'dark' ? 'bg-gray-900 text-gray-100 ring-gray-700/50' : 'bg-white text-gray-900 ring-gray-200/50'
+              theme === 'dark' ? 'bg-gray-800 text-white ring-gray-700/50' : 'bg-white text-gray-900 ring-gray-200/50'
             }`}
             style={welcomeStyle}
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            initial={{ opacity: 0, scale: 0.95, y: '2rem' }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            exit={{ opacity: 0, scale: 0.95, y: '2rem' }}
             transition={{ duration: 0.3, ease: 'easeOut' }}
             role="dialog"
             aria-labelledby={`tour-welcome-title-${tourId}`}
@@ -2642,8 +2668,8 @@ export default function Tour({
                   </h3>
                   <button
                     onClick={handleSkip}
-                    className={`p-2 rounded-full ${
-                      theme === 'dark' ? 'text-gray-400 hover:bg-gray-700' : 'text-gray-500 hover:bg-gray-200'
+                    className={`p-1 rounded-full transition-colors ${
+                      theme === 'dark' ? 'text-gray-400 hover:bg-gray-700' : 'text-gray-500 hover:bg-gray-100'
                     }`}
                     aria-label="Skip tour"
                   >
@@ -2656,7 +2682,7 @@ export default function Tour({
                 <div className="flex justify-between items-center">
                   <button
                     onClick={handleSkip}
-                    className={`text-sm ${
+                    className={`text-sm font-medium transition-colors ${
                       theme === 'dark' ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-700'
                     }`}
                   >
@@ -2664,8 +2690,10 @@ export default function Tour({
                   </button>
                   <button
                     onClick={handleStart}
-                    className={`px-4 py-2 rounded-md text-sm text-white ${
-                      theme === 'dark' ? 'bg-blue-600 hover:bg-blue-500' : 'bg-blue-700 hover:bg-blue-600'
+                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                      theme === 'dark'
+                        ? 'bg-blue-600 text-white hover:bg-blue-500 hover:text-gray-900'
+                        : 'bg-blue-700 text-white hover:bg-blue-600'
                     }`}
                   >
                     {(welcomeScreen.content as PredefinedWelcomeConfig).startButtonText || buttonLabels.start || 'Start Tour'}
@@ -2675,10 +2703,10 @@ export default function Tour({
             ) : (
               <>
                 {welcomeScreen.content}
-                <div className="flex justify-between items-center mt-4">
+                <div className="flex justify-between items-center mt-6">
                   <button
                     onClick={handleSkip}
-                    className={`text-sm ${
+                    className={`text-sm font-medium transition-colors ${
                       theme === 'dark' ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-700'
                     }`}
                   >
@@ -2686,8 +2714,10 @@ export default function Tour({
                   </button>
                   <button
                     onClick={handleStart}
-                    className={`px-4 py-2 rounded-md text-sm text-white ${
-                      theme === 'dark' ? 'bg-blue-600 hover:bg-blue-500' : 'bg-blue-700 hover:bg-blue-600'
+                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                      theme === 'dark'
+                        ? 'bg-blue-600 text-white hover:bg-blue-500 hover:text-gray-900'
+                        : 'bg-blue-700 text-white hover:bg-blue-600'
                     }`}
                   >
                     {buttonLabels.start || 'Start Tour'}
@@ -2699,26 +2729,26 @@ export default function Tour({
         ) : (
           currentStep < filteredSteps.length && (
             <motion.div
-              className={`tour-content-${tourId} absolute p-5 rounded-xl max-w-sm min-w-[200px] backdrop-blur-sm shadow-lg ring-1 ${
-                theme === 'dark' ? 'bg-gray-900 text-gray-100 ring-gray-700/50' : 'bg-white text-gray-900 ring-gray-200/50'
+              className={`tour-content-${tourId} absolute p-5 rounded-xl max-w-sm w-full min-w-[200px] backdrop-blur-sm shadow-lg ring-1 ${
+                theme === 'dark' ? 'bg-gray-800 text-white ring-gray-700/50' : 'bg-white text-gray-900 ring-gray-200/50'
               }`}
               style={{
-                top: tooltipPosition.top,
-                left: tooltipPosition.left,
+                top: `${tooltipPosition.top}px`,
+                left: `${tooltipPosition.left}px`,
                 transform: tooltipTransform,
                 margin: '0 10px',
                 zIndex: zIndex + 1,
               }}
               initial={{
                 opacity: 0,
-                y: filteredSteps[currentStep].position?.includes('top') ? 10 : -10,
-                x: filteredSteps[currentStep].position?.includes('left') ? 10 : -10,
+                y: filteredSteps[currentStep].position?.includes('top') ? '0.6rem' : '-0.6rem',
+                x: filteredSteps[currentStep].position?.includes('left') ? '0.6rem' : '-0.6rem',
               }}
               animate={{ opacity: 1, y: 0, x: 0 }}
               exit={{
                 opacity: 0,
-                y: filteredSteps[currentStep].position?.includes('top') ? 10 : -10,
-                x: filteredSteps[currentStep].position?.includes('left') ? 10 : -10,
+                y: filteredSteps[currentStep].position?.includes('top') ? '0.6rem' : '-0.6rem',
+                x: filteredSteps[currentStep].position?.includes('left') ? '0.6rem' : '-0.6rem',
               }}
               transition={{ duration: 0.3, ease: 'easeOut' }}
               role="dialog"
@@ -2731,7 +2761,7 @@ export default function Tour({
               <div className="mb-3">
                 <div className="relative h-1.5 rounded-full bg-gray-200 dark:bg-gray-700">
                   <div
-                    className="absolute h-1.5 bg-blue-500 rounded-full"
+                    className="absolute h-1.5 bg-blue-500 rounded-full transition-all duration-300"
                     style={{ width: `${((currentStep + 1) / filteredSteps.length) * 100}%` }}
                   />
                 </div>
@@ -2740,7 +2770,9 @@ export default function Tour({
                     {filteredSteps.map((_, index) => (
                       <div
                         key={index}
-                        className={`w-1.5 h-1.5 rounded-full ${index === currentStep ? 'bg-blue-500' : 'bg-gray-400'}`}
+                        className={`w-1.5 h-1.5 rounded-full transition-colors ${
+                          index === currentStep ? 'bg-blue-500' : 'bg-gray-400'
+                        }`}
                       />
                     ))}
                   </div>
@@ -2749,7 +2781,9 @@ export default function Tour({
               <div className="flex justify-between items-center">
                 <button
                   onClick={handleSkip}
-                  className={`text-sm ${theme === 'dark' ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-700'}`}
+                  className={`text-sm font-medium transition-colors ${
+                    theme === 'dark' ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-700'
+                  }`}
                 >
                   {buttonLabels.skip || 'Skip'}
                 </button>
@@ -2757,12 +2791,12 @@ export default function Tour({
                   <button
                     onClick={handlePrevious}
                     disabled={currentStep === 0}
-                    className={`px-3 py-1 rounded-md text-sm text-white ${
+                    className={`px-3 py-1 rounded-md text-sm font-medium transition-all ${
                       currentStep === 0
-                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        ? 'bg-gray-400 text-gray-600 cursor-not-allowed'
                         : theme === 'dark'
-                        ? 'bg-gray-600 hover:bg-gray-500'
-                        : 'bg-gray-700 hover:bg-gray-600'
+                        ? 'bg-gray-600 text-white hover:bg-gray-500 hover:text-gray-100'
+                        : 'bg-gray-700 text-white hover:bg-gray-600'
                     }`}
                   >
                     {buttonLabels.previous || 'Previous'}
@@ -2772,8 +2806,10 @@ export default function Tour({
                   </span>
                   <button
                     onClick={handleNext}
-                    className={`px-3 py-1 rounded-md text-sm text-white ${
-                      theme === 'dark' ? 'bg-blue-600 hover:bg-blue-500' : 'bg-blue-700 hover:bg-blue-600'
+                    className={`px-3 py-1 rounded-md text-sm font-medium transition-all ${
+                      theme === 'dark'
+                        ? 'bg-blue-600 text-white hover:bg-blue-500 hover:text-gray-900'
+                        : 'bg-blue-700 text-white hover:bg-blue-600'
                     }`}
                   >
                     {currentStep < filteredSteps.length - 1
