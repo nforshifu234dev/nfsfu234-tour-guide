@@ -1,6 +1,6 @@
 {
   "name": "nfsfu234-tour-guide",
-  "version": "0.2.8",
+  "version": "0.2.9",
   "description": "A plug-and-play React component for creating customizable onboarding tours with tooltips, modals, and smooth user guidance. Built with Tailwind CSS and supports dark mode, Framer Motion animations, and full control over step logic.",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
