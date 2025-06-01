@@ -1995,14 +1995,13 @@
 
 
 
-
 'use client';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 
-// Interface definitions (unchanged)
+// Interface definitions
 export interface PredefinedWelcomeConfig {
   title: string;
   message: string;
@@ -2053,7 +2052,6 @@ export default function Tour({
   steps = [],
   theme,
   deviceMode = 'desktop',
-  deviceMode = 'desktop',
   isActive = true,
   onComplete,
   onSkip,
@@ -2071,9 +2069,9 @@ export default function Tour({
   const [navigationDirection, setNavigationDirection] = useState<'forward' | 'backward' | null>(null);
   const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(null);
   const [welcomeStyle, setWelcomeStyle] = useState<React.CSSProperties>({});
-  const [zIndex, setZIndex] = useState(2147483646); // Start with near-max z-index
-  const [validSteps, setValidSteps] = useState<TourStep[]>(steps); // Track valid steps
-  const [isDomReady, setIsDomReady] = useState(false); // Track DOM readiness
+  const [zIndex, setZIndex] = useState(2147483646);
+  const [validSteps, setValidSteps] = useState<TourStep[]>(steps);
+  const [isDomReady, setIsDomReady] = useState(false);
 
   // Wait for element with retries
   const waitForElement = useCallback((selector: string, timeout = 5000): Promise<Element | null> => {
@@ -2095,7 +2093,6 @@ export default function Tour({
     const container = document.createElement('div');
     container.id = `tour-portal-${tourId}`;
     container.className = 'fixed inset-0 pointer-events-none';
-    container.className = 'fixed inset-0 pointer-events-none';
     document.body.appendChild(container);
     setPortalContainer(container);
 
@@ -2108,7 +2105,7 @@ export default function Tour({
     // Dynamically adjust z-index based on DOM
     const updateZIndex = () => {
       const elements = document.querySelectorAll('*');
-      let maxZIndex = 2147483646; // Start high
+      let maxZIndex = 2147483646;
       elements.forEach((el) => {
         const z = parseInt(window.getComputedStyle(el).zIndex, 10);
         if (!isNaN(z) && z > maxZIndex && z < 2147483647) maxZIndex = z;
@@ -2153,9 +2150,7 @@ export default function Tour({
     validateSteps();
 
     // Monitor DOM for dynamic content
-    const observer = new MutationObserver(() => {
-      validateSteps();
-    });
+    const observer = new MutationObserver(() => validateSteps());
     observer.observe(document.body, { childList: true, subtree: true });
 
     return () => observer.disconnect();
@@ -2174,8 +2169,6 @@ export default function Tour({
       style.textContent = `
         .tour-highlight-${tourId} {
           position: relative !important;
-          z-index: ${zIndex - 1} !important;
-          box-shadow: 0 0 8px 2px rgba(29, 78, 216, 0.5) !important;
           z-index: ${zIndex - 1} !important;
           box-shadow: 0 0 8px 2px rgba(29, 78, 216, 0.5) !important;
           border: 2px solid rgba(29, 78, 216, 0.7) !important;
@@ -2197,7 +2190,6 @@ export default function Tour({
         }
         [data-theme="dark"] .tour-highlight-${tourId}, .dark .tour-highlight-${tourId} {
           box-shadow: 0 0 8px 2px rgba(37, 99, 235, 0.5) !important;
-          box-shadow: 0 0 8px 2px rgba(37, 99, 235, 0.5) !important;
           border: 2px solid rgba(37, 99, 235, 0.7) !important;
         }
       `;
@@ -2212,8 +2204,6 @@ export default function Tour({
     };
   }, [isVisible, isDomReady, tourId, zIndex]);
 
-  // Detect device mode
-  const isMobile = deviceMode === 'mobile' || deviceMode === 'tablet';
   // Detect device mode
   const isMobile = deviceMode === 'mobile' || deviceMode === 'tablet';
 
@@ -2233,7 +2223,6 @@ export default function Tour({
     }
   }, [isActive, welcomeScreen.enabled, currentStep, onStart, isDomReady]);
 
-  // Handle welcome screen positioning
   // Handle welcome screen positioning
   useEffect(() => {
     if (!isVisible || currentStep !== -1 || !welcomeScreen.enabled || !isDomReady) return;
@@ -2255,22 +2244,14 @@ export default function Tour({
 
         if (typeof userTop === 'string') {
           userTop = parseFloat(userTop) * (userTop.endsWith('%') ? viewportHeight / 100 : userTop.endsWith('rem') ? 16 : 1);
-          userTop = parseFloat(userTop) * (userTop.endsWith('%') ? viewportHeight / 100 : userTop.endsWith('rem') ? 16 : 1);
         }
         if (typeof userLeft === 'string') {
           userLeft = parseFloat(userLeft) * (userLeft.endsWith('%') ? viewportWidth / 100 : userLeft.endsWith('rem') ? 16 : 1);
-          userLeft = parseFloat(userLeft) * (userLeft.endsWith('%') ? viewportWidth / 100 : userLeft.endsWith('rem') ? 16 : 1);
         }
 
         top += typeof userTop === 'number' ? userTop : 0;
         left += typeof userLeft === 'number' ? userLeft : 0;
-        top += typeof userTop === 'number' ? userTop : 0;
-        left += typeof userLeft === 'number' ? userLeft : 0;
 
-        const welcomeWidth = Math.min(viewportWidth * 0.9, 448);
-        const welcomeHeight = 300;
-        top = Math.max(10, Math.min(top, viewportHeight - welcomeHeight - 10));
-        left = Math.max(10, Math.min(left, viewportWidth - welcomeWidth - 10));
         const welcomeWidth = Math.min(viewportWidth * 0.9, 448);
         const welcomeHeight = 300;
         top = Math.max(10, Math.min(top, viewportHeight - welcomeHeight - 10));
@@ -2315,9 +2296,8 @@ export default function Tour({
     return targetElement;
   }, [waitForElement]);
 
+  // Get step content
   const getStepContent = (step: TourStep): string => {
-    if (isMobile && step.contentMobile) return step.contentMobile;
-    if (!isMobile && step.contentDesktop) return step.contentDesktop;
     if (isMobile && step.contentMobile) return step.contentMobile;
     if (!isMobile && step.contentDesktop) return step.contentDesktop;
     return step.content;
@@ -2388,7 +2368,6 @@ export default function Tour({
     if (!isVisible) {
       window.scrollBy({ top: rect.top - 50, left: rect.left - 50, behavior: 'smooth' });
     }
-    // Adjust scrollable parents
     let parent = element.parentElement;
     while (parent && parent !== document.body) {
       const parentStyle = window.getComputedStyle(parent);
@@ -2399,7 +2378,6 @@ export default function Tour({
     }
   }, []);
 
-  // Position tooltip
   // Position tooltip
   useEffect(() => {
     if (!isVisible || currentStep < 0 || currentStep >= filteredSteps.length || !isDomReady) return;
@@ -2433,16 +2411,6 @@ export default function Tour({
       const position = step.position || 'bottom';
       const offsetX = step.offset?.x || 0;
       const offsetY = step.offset?.y || 10;
-      const viewportWidth = window.innerWidth;
-      const viewportHeight = window.innerHeight;
-      const tooltipWidth = 320;
-      const tooltipHeight = 150;
-      let top: number = 0;
-      let left: number = 0;
-      let transform = '';
-      const position = step.position || 'bottom';
-      const offsetX = step.offset?.x || 0;
-      const offsetY = step.offset?.y || 10;
 
       if (step.customPosition) {
         setTooltipPosition({
@@ -2454,7 +2422,6 @@ export default function Tour({
         return;
       }
 
-      if (position === 'center') {
       if (position === 'center') {
         setTooltipPosition({ top: '50%', left: '50%' });
         setTooltipTransform('translate(-50%, -50%)');
@@ -2517,10 +2484,6 @@ export default function Tour({
 
       top = Math.max(10, Math.min(top, viewportHeight - tooltipHeight - 10));
       left = Math.max(10, Math.min(left, viewportWidth - tooltipWidth - 10));
-      }
-
-      top = Math.max(10, Math.min(top, viewportHeight - tooltipHeight - 10));
-      left = Math.max(10, Math.min(left, viewportWidth - tooltipWidth - 10));
 
       setTooltipPosition({ top, left });
       setTooltipTransform(transform);
@@ -2553,7 +2516,6 @@ export default function Tour({
       const highlightClass = `tour-highlight-${tourId}`;
       targetElement.classList.add(highlightClass);
 
-      // Adjust parent overflow
       const parent = targetElement.parentElement;
       let originalOverflow = '';
       if (parent) {
@@ -2658,7 +2620,6 @@ export default function Tour({
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         style={{ zIndex }}
-        style={{ zIndex }}
       >
         {currentStep === -1 && welcomeScreen.enabled ? (
           <motion.div
@@ -2683,15 +2644,12 @@ export default function Tour({
                     onClick={handleSkip}
                     className={`p-2 rounded-full ${
                       theme === 'dark' ? 'text-gray-400 hover:bg-gray-700' : 'text-gray-500 hover:bg-gray-200'
-                    className={`p-2 rounded-full ${
-                      theme === 'dark' ? 'text-gray-400 hover:bg-gray-700' : 'text-gray-500 hover:bg-gray-200'
                     }`}
                     aria-label="Skip tour"
                   >
                     <X size={20} />
                   </button>
                 </div>
-                <p className="text-sm mb-6">
                 <p className="text-sm mb-6">
                   {(welcomeScreen.content as PredefinedWelcomeConfig).message}
                 </p>
@@ -2700,16 +2658,12 @@ export default function Tour({
                     onClick={handleSkip}
                     className={`text-sm ${
                       theme === 'dark' ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-700'
-                    className={`text-sm ${
-                      theme === 'dark' ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-700'
                     }`}
                   >
                     {buttonLabels.skip || 'Skip Tour'}
                   </button>
                   <button
                     onClick={handleStart}
-                    className={`px-4 py-2 rounded-md text-sm text-white ${
-                      theme === 'dark' ? 'bg-blue-600 hover:bg-blue-500' : 'bg-blue-700 hover:bg-blue-600'
                     className={`px-4 py-2 rounded-md text-sm text-white ${
                       theme === 'dark' ? 'bg-blue-600 hover:bg-blue-500' : 'bg-blue-700 hover:bg-blue-600'
                     }`}
@@ -2726,16 +2680,12 @@ export default function Tour({
                     onClick={handleSkip}
                     className={`text-sm ${
                       theme === 'dark' ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-700'
-                    className={`text-sm ${
-                      theme === 'dark' ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-700'
                     }`}
                   >
                     {buttonLabels.skip || 'Skip Tour'}
                   </button>
                   <button
                     onClick={handleStart}
-                    className={`px-4 py-2 rounded-md text-sm text-white ${
-                      theme === 'dark' ? 'bg-blue-600 hover:bg-blue-500' : 'bg-blue-700 hover:bg-blue-600'
                     className={`px-4 py-2 rounded-md text-sm text-white ${
                       theme === 'dark' ? 'bg-blue-600 hover:bg-blue-500' : 'bg-blue-700 hover:bg-blue-600'
                     }`}
@@ -2748,7 +2698,6 @@ export default function Tour({
           </motion.div>
         ) : (
           currentStep < filteredSteps.length && (
-          currentStep < filteredSteps.length && (
             <motion.div
               className={`tour-content-${tourId} absolute p-5 rounded-xl max-w-sm min-w-[200px] backdrop-blur-sm shadow-lg ring-1 ${
                 theme === 'dark' ? 'bg-gray-900 text-gray-100 ring-gray-700/50' : 'bg-white text-gray-900 ring-gray-200/50'
@@ -2759,20 +2708,15 @@ export default function Tour({
                 transform: tooltipTransform,
                 margin: '0 10px',
                 zIndex: zIndex + 1,
-                zIndex: zIndex + 1,
               }}
               initial={{
                 opacity: 0,
-                y: filteredSteps[currentStep].position?.includes('top') ? 10 : -10,
-                x: filteredSteps[currentStep].position?.includes('left') ? 10 : -10,
                 y: filteredSteps[currentStep].position?.includes('top') ? 10 : -10,
                 x: filteredSteps[currentStep].position?.includes('left') ? 10 : -10,
               }}
               animate={{ opacity: 1, y: 0, x: 0 }}
               exit={{
                 opacity: 0,
-                y: filteredSteps[currentStep].position?.includes('top') ? 10 : -10,
-                x: filteredSteps[currentStep].position?.includes('left') ? 10 : -10,
                 y: filteredSteps[currentStep].position?.includes('top') ? 10 : -10,
                 x: filteredSteps[currentStep].position?.includes('left') ? 10 : -10,
               }}
@@ -2788,7 +2732,6 @@ export default function Tour({
                 <div className="relative h-1.5 rounded-full bg-gray-200 dark:bg-gray-700">
                   <div
                     className="absolute h-1.5 bg-blue-500 rounded-full"
-                    className="absolute h-1.5 bg-blue-500 rounded-full"
                     style={{ width: `${((currentStep + 1) / filteredSteps.length) * 100}%` }}
                   />
                 </div>
@@ -2797,10 +2740,7 @@ export default function Tour({
                     {filteredSteps.map((_, index) => (
                       <div
                         key={index}
-                        className={`w-1.5 h-1.5 rounded-full ${
-                          index === currentStep ? 'bg-blue-500' : 'bg-gray-400'
-                          index === currentStep ? 'bg-blue-500' : 'bg-gray-400'
-                        }`}
+                        className={`w-1.5 h-1.5 rounded-full ${index === currentStep ? 'bg-blue-500' : 'bg-gray-400'}`}
                       />
                     ))}
                   </div>
@@ -2809,11 +2749,7 @@ export default function Tour({
               <div className="flex justify-between items-center">
                 <button
                   onClick={handleSkip}
-                  className={`text-sm ${
-                    theme === 'dark' ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-700'
-                  className={`text-sm ${
-                    theme === 'dark' ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-700'
-                  }`}
+                  className={`text-sm ${theme === 'dark' ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-700'}`}
                 >
                   {buttonLabels.skip || 'Skip'}
                 </button>
@@ -2822,12 +2758,9 @@ export default function Tour({
                     onClick={handlePrevious}
                     disabled={currentStep === 0}
                     className={`px-3 py-1 rounded-md text-sm text-white ${
-                    className={`px-3 py-1 rounded-md text-sm text-white ${
                       currentStep === 0
                         ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                         : theme === 'dark'
-                        ? 'bg-gray-600 hover:bg-gray-500'
-                        : 'bg-gray-700 hover:bg-gray-600'
                         ? 'bg-gray-600 hover:bg-gray-500'
                         : 'bg-gray-700 hover:bg-gray-600'
                     }`}
@@ -2835,13 +2768,10 @@ export default function Tour({
                     {buttonLabels.previous || 'Previous'}
                   </button>
                   <span className="text-xs text-gray-400">
-                  <span className="text-xs text-gray-400">
                     {currentStep + 1} / {filteredSteps.length}
                   </span>
                   <button
                     onClick={handleNext}
-                    className={`px-3 py-1 rounded-md text-sm text-white ${
-                      theme === 'dark' ? 'bg-blue-600 hover:bg-blue-500' : 'bg-blue-700 hover:bg-blue-600'
                     className={`px-3 py-1 rounded-md text-sm text-white ${
                       theme === 'dark' ? 'bg-blue-600 hover:bg-blue-500' : 'bg-blue-700 hover:bg-blue-600'
                     }`}
@@ -2853,7 +2783,6 @@ export default function Tour({
                 </div>
               </div>
             </motion.div>
-          )
           )
         )}
       </motion.div>
