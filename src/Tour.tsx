@@ -868,6 +868,7 @@ export default function Tour({
                 left: tooltipPosition.left,
                 transform: tooltipTransform,
                 margin: '0 10px',
+                zIndex: 2147483647 
               }}
               initial={{
                 opacity: 0,
