@@ -1131,6 +1131,8 @@ export default function Tour({
     if (!existingStyle) {
       const style = document.createElement('style');
       style.id = styleId;
+          // z-index: 2147483646 !important;
+
       style.textContent = `
         .tour-highlight-${tourId} {
           position: relative !important;
