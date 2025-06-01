@@ -1003,21 +1003,13 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 
-// Interface definitions remain the same
+// Interface definitions (unchanged)
 export interface PredefinedWelcomeConfig {
   title: string;
   message: string;
   startButtonText?: string;
-  position?: {
-    top?: number | string;
-    left?: number | string;
-    transform?: string;
-  };
-  mobilePosition?: {
-    top?: number | string;
-    left?: number | string;
-    transform?: string;
-  };
+  position?: { top?: number | string; left?: number | string; transform?: string };
+  mobilePosition?: { top?: number | string; left?: number | string; transform?: string };
 }
 
 export interface TourStep {
@@ -1037,15 +1029,8 @@ export interface TourStep {
     | 'right'
     | 'center-right'
     | 'center';
-  customPosition?: {
-    top?: number | string;
-    left?: number | string;
-    transform?: string;
-  };
-  offset?: {
-    x?: number;
-    y?: number;
-  };
+  customPosition?: { top?: number | string; left?: number | string; transform?: string };
+  offset?: { x?: number; y?: number };
   device?: 'desktop' | 'mobile' | 'both';
 }
 
@@ -1059,17 +1044,8 @@ export interface TourProps {
   onSkip?: () => void;
   onStart?: () => void;
   onStepChange?: (stepIndex: number) => void;
-  welcomeScreen?: {
-    enabled: boolean;
-    content?: React.ReactNode | PredefinedWelcomeConfig;
-  };
-  buttonLabels?: {
-    next?: string;
-    previous?: string;
-    skip?: string;
-    finish?: string;
-    start?: string;
-  };
+  welcomeScreen?: { enabled: boolean; content?: React.ReactNode | PredefinedWelcomeConfig };
+  buttonLabels?: { next?: string; previous?: string; skip?: string; finish?: string; start?: string };
   showProgressDots?: boolean;
 }
 
@@ -1095,9 +1071,26 @@ export default function Tour({
   const [navigationDirection, setNavigationDirection] = useState<'forward' | 'backward' | null>(null);
   const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(null);
   const [welcomeStyle, setWelcomeStyle] = useState<React.CSSProperties>({});
-  const [zIndex, setZIndex] = useState(1000); // Start with a reasonable base z-index
+  const [zIndex, setZIndex] = useState(2147483646); // Start with near-max z-index
+  const [validSteps, setValidSteps] = useState<TourStep[]>(steps); // Track valid steps
+  const [isDomReady, setIsDomReady] = useState(false); // Track DOM readiness
 
-  // Create portal container
+  // Wait for element with retries
+  const waitForElement = useCallback((selector: string, timeout = 5000): Promise<Element | null> => {
+    return new Promise((resolve) => {
+      const startTime = Date.now();
+      const check = () => {
+        const element = document.querySelector(selector);
+        if (element) return resolve(element);
+        if (Date.now() - startTime > timeout) return resolve(null);
+        setTimeout(check, 500);
+      };
+      if (document.readyState === 'complete') check();
+      else window.addEventListener('load', check, { once: true });
+    });
+  }, []);
+
+  // Create portal container and handle z-index
   useEffect(() => {
     const container = document.createElement('div');
     container.id = `tour-portal-${tourId}`;
@@ -1105,25 +1098,71 @@ export default function Tour({
     document.body.appendChild(container);
     setPortalContainer(container);
 
-    // Dynamically calculate the highest z-index in the DOM
-    const elements = document.querySelectorAll('*');
-    let maxZIndex = 1000;
-    elements.forEach((el) => {
-      const z = parseInt(window.getComputedStyle(el).zIndex, 10);
-      if (!isNaN(z) && z > maxZIndex) maxZIndex = z;
-    });
-    setZIndex(maxZIndex + 10); // Set tour z-index just above the highest found
+    // Override body/html overflow to prevent clipping
+    const originalBodyOverflow = document.body.style.overflow;
+    const originalHtmlOverflow = document.documentElement.style.overflow;
+    document.body.style.overflow = 'visible';
+    document.documentElement.style.overflow = 'visible';
+
+    // Dynamically adjust z-index based on DOM
+    const updateZIndex = () => {
+      const elements = document.querySelectorAll('*');
+      let maxZIndex = 2147483646; // Start high
+      elements.forEach((el) => {
+        const z = parseInt(window.getComputedStyle(el).zIndex, 10);
+        if (!isNaN(z) && z > maxZIndex && z < 2147483647) maxZIndex = z;
+      });
+      setZIndex(maxZIndex + 1);
+    };
+    updateZIndex();
+
+    // Monitor DOM for new elements
+    const observer = new MutationObserver(updateZIndex);
+    observer.observe(document.body, { childList: true, subtree: true });
 
     return () => {
       if (container && container.parentNode) {
         container.parentNode.removeChild(container);
       }
+      document.body.style.overflow = originalBodyOverflow;
+      document.documentElement.style.overflow = originalHtmlOverflow;
+      observer.disconnect();
     };
   }, [tourId]);
 
-  // Inject dynamic highlight styles
+  // Validate steps and ensure DOM readiness
   useEffect(() => {
     if (!isVisible) return;
+
+    const validateSteps = async () => {
+      const valid = [];
+      for (const step of steps) {
+        const element = await waitForElement(step.target);
+        if (element) valid.push(step);
+      }
+      setValidSteps(valid);
+      setIsDomReady(true);
+      if (valid.length === 0 && steps.length > 0) {
+        console.warn('No valid tour steps found. Tour will not proceed.');
+        setIsVisible(false);
+        onSkip?.();
+      }
+    };
+
+    validateSteps();
+
+    // Monitor DOM for dynamic content
+    const observer = new MutationObserver(() => {
+      validateSteps();
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    return () => observer.disconnect();
+  }, [steps, isVisible, waitForElement, onSkip]);
+
+  // Inject dynamic highlight styles
+  useEffect(() => {
+    if (!isVisible || !isDomReady) return;
 
     const styleId = `tour-styles-${tourId}`;
     let existingStyle = document.getElementById(styleId);
@@ -1131,8 +1170,6 @@ export default function Tour({
     if (!existingStyle) {
       const style = document.createElement('style');
       style.id = styleId;
-          // z-index: 2147483646 !important;
-
       style.textContent = `
         .tour-highlight-${tourId} {
           position: relative !important;
@@ -1145,10 +1182,15 @@ export default function Tour({
         .tour-overlay-${tourId} {
           pointer-events: auto !important;
           z-index: ${zIndex} !important;
+          isolation: isolate;
         }
         .tour-content-${tourId} {
           pointer-events: auto !important;
           z-index: ${zIndex + 1} !important;
+          isolation: isolate;
+        }
+        .tour-arrow-${tourId} {
+          z-index: ${zIndex + 2} !important;
         }
         [data-theme="dark"] .tour-highlight-${tourId}, .dark .tour-highlight-${tourId} {
           box-shadow: 0 0 8px 2px rgba(37, 99, 235, 0.5) !important;
@@ -1164,30 +1206,30 @@ export default function Tour({
         style.parentNode.removeChild(style);
       }
     };
-  }, [isVisible, tourId, zIndex]);
+  }, [isVisible, isDomReady, tourId, zIndex]);
 
   // Detect device mode
   const isMobile = deviceMode === 'mobile' || deviceMode === 'tablet';
 
   // Filter steps based on device
   const filteredSteps = useMemo(() => {
-    return steps.filter((step) => {
+    return validSteps.filter((step) => {
       if (!step.device || step.device === 'both') return true;
       return step.device === (isMobile ? 'mobile' : 'desktop');
     });
-  }, [steps, isMobile]);
+  }, [validSteps, isMobile]);
 
   // Sync isVisible with isActive prop
   useEffect(() => {
-    setIsVisible(isActive);
-    if (isActive && welcomeScreen.enabled && currentStep === -1) {
+    setIsVisible(isActive && isDomReady);
+    if (isActive && welcomeScreen.enabled && currentStep === -1 && isDomReady) {
       onStart?.();
     }
-  }, [isActive, welcomeScreen.enabled, currentStep, onStart]);
+  }, [isActive, welcomeScreen.enabled, currentStep, onStart, isDomReady]);
 
   // Handle welcome screen positioning
   useEffect(() => {
-    if (!isVisible || currentStep !== -1 || !welcomeScreen.enabled) return;
+    if (!isVisible || currentStep !== -1 || !welcomeScreen.enabled || !isDomReady) return;
 
     const updateResponsiveStyles = () => {
       const viewportWidth = window.innerWidth;
@@ -1195,11 +1237,11 @@ export default function Tour({
       const config = welcomeScreen.content as PredefinedWelcomeConfig;
       const hasCustomPosition = config?.position || (isMobile && config?.mobilePosition);
 
-      if (hasCustomPosition) {
-        let top = viewportHeight * 0.5;
-        let left = viewportWidth * 0.5;
-        let transform = 'translate(-50%, -50%)';
+      let top = viewportHeight * 0.5;
+      let left = viewportWidth * 0.5;
+      let transform = 'translate(-50%, -50%)';
 
+      if (hasCustomPosition) {
         let userTop = isMobile && config.mobilePosition?.top ? config.mobilePosition.top : config.position?.top ?? 0;
         let userLeft = isMobile && config.mobilePosition?.left ? config.mobilePosition.left : config.position?.left ?? 0;
         let userTransform = isMobile && config.mobilePosition?.transform ? config.mobilePosition.transform : config.position?.transform;
@@ -1226,18 +1268,28 @@ export default function Tour({
           transform: userTransform ?? transform,
         });
       } else {
-        setWelcomeStyle({});
+        setWelcomeStyle({ top: '50%', left: '50%', transform });
       }
     };
 
     updateResponsiveStyles();
-    window.addEventListener('resize', updateResponsiveStyles);
-    return () => window.removeEventListener('resize', updateResponsiveStyles);
-  }, [isVisible, currentStep, welcomeScreen, isMobile]);
+    const debouncedUpdate = debounce(updateResponsiveStyles, 100);
+    window.addEventListener('resize', debouncedUpdate);
+    return () => window.removeEventListener('resize', debouncedUpdate);
+  }, [isVisible, currentStep, welcomeScreen, isMobile, isDomReady]);
 
-  // Find target element with retry mechanism
-  const getTargetElement = useCallback((step: TourStep): Element | null => {
-    let targetElement: Element | null = document.querySelector(step.target);
+  // Debounce utility
+  const debounce = (func: Function, wait: number) => {
+    let timeout: NodeJS.Timeout;
+    return (...args: any[]) => {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => func(...args), wait);
+    };
+  };
+
+  // Find target element
+  const getTargetElement = useCallback(async (step: TourStep): Promise<Element | null> => {
+    let targetElement = await waitForElement(step.target);
     if (!targetElement && step.target.startsWith('.')) {
       const elements = document.querySelectorAll(step.target);
       targetElement = Array.from(elements).find((el) => {
@@ -1246,7 +1298,7 @@ export default function Tour({
       }) || null;
     }
     return targetElement;
-  }, []);
+  }, [waitForElement]);
 
   const getStepContent = (step: TourStep): string => {
     if (isMobile && step.contentMobile) return step.contentMobile;
@@ -1256,13 +1308,7 @@ export default function Tour({
 
   // Create arrow styles
   const createArrowStyle = useCallback(
-    (
-      position: string,
-      rect: DOMRect,
-      left: number,
-      tooltipWidth: number,
-      theme: string
-    ): React.CSSProperties => {
+    (position: string, theme: string): React.CSSProperties => {
       const baseArrow: React.CSSProperties = {
         position: 'absolute',
         width: 0,
@@ -1313,27 +1359,51 @@ export default function Tour({
           return { display: 'none' };
       }
     },
-    [zIndex, theme]
+    [zIndex]
   );
+
+  // Ensure element visibility
+  const ensureVisible = useCallback((element: Element) => {
+    element.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+    const rect = element.getBoundingClientRect();
+    const isVisible = rect.top >= 0 && rect.left >= 0 && 
+      rect.bottom <= window.innerHeight && rect.right <= window.innerWidth;
+    if (!isVisible) {
+      window.scrollBy({ top: rect.top - 50, left: rect.left - 50, behavior: 'smooth' });
+    }
+    // Adjust scrollable parents
+    let parent = element.parentElement;
+    while (parent && parent !== document.body) {
+      const parentStyle = window.getComputedStyle(parent);
+      if (parentStyle.overflow === 'auto' || parentStyle.overflow === 'scroll') {
+        parent.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      parent = parent.parentElement;
+    }
+  }, []);
 
   // Position tooltip
   useEffect(() => {
-    if (!isVisible || currentStep < 0 || currentStep >= filteredSteps.length) return;
+    if (!isVisible || currentStep < 0 || currentStep >= filteredSteps.length || !isDomReady) return;
 
     const step = filteredSteps[currentStep];
-    const targetElement = getTargetElement(step);
+    let isMounted = true;
 
-    if (!targetElement) {
-      console.warn(`Tour target not found: ${step.target}`);
-      if (navigationDirection !== 'backward' && currentStep < filteredSteps.length - 1) {
-        setNavigationDirection('forward');
-        setCurrentStep(currentStep + 1);
+    const updatePosition = async () => {
+      const targetElement = await getTargetElement(step);
+      if (!targetElement || !isMounted) {
+        console.warn(`Tour target not found: ${step.target}`);
+        if (navigationDirection !== 'backward' && currentStep < filteredSteps.length - 1) {
+          setNavigationDirection('forward');
+          setCurrentStep(currentStep + 1);
+        } else {
+          setIsVisible(false);
+          onComplete?.();
+        }
+        return;
       }
-      return;
-    }
 
-    const updatePosition = () => {
-      targetElement.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+      ensureVisible(targetElement);
       const rect = targetElement.getBoundingClientRect();
       const viewportWidth = window.innerWidth;
       const viewportHeight = window.innerHeight;
@@ -1384,6 +1454,36 @@ export default function Tour({
           left = rect.right + 10 + offsetX;
           transform = 'translateY(-50%)';
           break;
+        case 'top-left':
+          top = rect.top - tooltipHeight - offsetY;
+          left = rect.left + offsetX;
+          transform = 'translateX(-10%)';
+          break;
+        case 'top-right':
+          top = rect.top - tooltipHeight - offsetY;
+          left = rect.right + offsetX;
+          transform = 'translateX(-90%)';
+          break;
+        case 'bottom-left':
+          top = rect.bottom + offsetY;
+          left = rect.left + offsetX;
+          transform = 'translateX(-10%)';
+          break;
+        case 'bottom-right':
+          top = rect.bottom + offsetY;
+          left = rect.right + offsetX;
+          transform = 'translateX(-90%)';
+          break;
+        case 'center-left':
+          top = rect.top + rect.height / 2 + offsetY;
+          left = rect.left - tooltipWidth - 10 + offsetX;
+          transform = 'translateY(-50%)';
+          break;
+        case 'center-right':
+          top = rect.top + rect.height / 2 + offsetY;
+          left = rect.right + 10 + offsetX;
+          transform = 'translateY(-50%)';
+          break;
       }
 
       top = Math.max(10, Math.min(top, viewportHeight - tooltipHeight - 10));
@@ -1391,39 +1491,65 @@ export default function Tour({
 
       setTooltipPosition({ top, left });
       setTooltipTransform(transform);
-      setArrowStyle(createArrowStyle(position, rect, left, tooltipWidth, theme));
+      setArrowStyle(createArrowStyle(position, theme));
     };
 
     updatePosition();
-    const handleResizeOrScroll = () => updatePosition();
-    window.addEventListener('resize', handleResizeOrScroll);
-    window.addEventListener('scroll', handleResizeOrScroll);
+    const debouncedUpdate = debounce(updatePosition, 100);
+    window.addEventListener('resize', debouncedUpdate);
+    window.addEventListener('scroll', debouncedUpdate);
 
     return () => {
-      window.removeEventListener('resize', handleResizeOrScroll);
-      window.removeEventListener('scroll', handleResizeOrScroll);
+      isMounted = false;
+      window.removeEventListener('resize', debouncedUpdate);
+      window.removeEventListener('scroll', debouncedUpdate);
     };
-  }, [isVisible, currentStep, filteredSteps, theme, navigationDirection, createArrowStyle, getTargetElement]);
+  }, [isVisible, currentStep, filteredSteps, theme, navigationDirection, createArrowStyle, getTargetElement, ensureVisible, isDomReady]);
 
-  // Highlight target element
+  // Highlight target element and adjust parent overflow
   useEffect(() => {
-    if (!isVisible || currentStep < 0 || currentStep >= filteredSteps.length) return;
+    if (!isVisible || currentStep < 0 || currentStep >= filteredSteps.length || !isDomReady) return;
 
     const step = filteredSteps[currentStep];
-    const targetElement = getTargetElement(step);
-    if (!targetElement) return;
+    let isMounted = true;
 
-    const highlightClass = `tour-highlight-${tourId}`;
-    targetElement.classList.add(highlightClass);
+    const highlightElement = async () => {
+      const targetElement = await getTargetElement(step);
+      if (!targetElement || !isMounted) return;
+
+      const highlightClass = `tour-highlight-${tourId}`;
+      targetElement.classList.add(highlightClass);
+
+      // Adjust parent overflow
+      const parent = targetElement.parentElement;
+      let originalOverflow = '';
+      if (parent) {
+        originalOverflow = window.getComputedStyle(parent).overflow;
+        if (originalOverflow.includes('hidden')) {
+          parent.style.overflow = 'visible';
+        }
+      }
+
+      return () => {
+        if (isMounted) {
+          targetElement.classList.remove(highlightClass);
+          if (parent && originalOverflow) {
+            parent.style.overflow = originalOverflow;
+          }
+        }
+      };
+    };
+
+    highlightElement();
 
     return () => {
-      targetElement.classList.remove(highlightClass);
+      isMounted = false;
     };
-  }, [currentStep, filteredSteps, isVisible, tourId, getTargetElement]);
+  }, [currentStep, filteredSteps, isVisible, tourId, getTargetElement, isDomReady]);
 
   // Keyboard navigation
   useEffect(() => {
-    if (!isVisible) return;
+    if (!isVisible || !isDomReady) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'ArrowRight' || e.key === 'Enter') {
@@ -1444,14 +1570,14 @@ export default function Tour({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentStep, isVisible]);
+  }, [currentStep, isVisible, isDomReady]);
 
   // Notify step change
   useEffect(() => {
-    if (isVisible && currentStep >= 0) {
+    if (isVisible && currentStep >= 0 && isDomReady) {
       onStepChange?.(currentStep);
     }
-  }, [currentStep, isVisible, onStepChange]);
+  }, [currentStep, isVisible, onStepChange, isDomReady]);
 
   // Navigation handlers
   const completeTour = useCallback(() => {
@@ -1487,7 +1613,7 @@ export default function Tour({
     onSkip?.();
   }, [onSkip, completeTour]);
 
-  if (!isVisible || !portalContainer) return null;
+  if (!isVisible || !portalContainer || !isDomReady || filteredSteps.length === 0) return null;
 
   const tourContent = (
     <AnimatePresence>
@@ -1503,9 +1629,7 @@ export default function Tour({
         {currentStep === -1 && welcomeScreen.enabled ? (
           <motion.div
             className={`tour-content-${tourId} p-6 rounded-xl w-[90%] max-w-md backdrop-blur-sm shadow-lg ring-1 ${
-              theme === 'dark'
-                ? 'bg-gray-900 text-gray-100 ring-gray-700/50'
-                : 'bg-white text-gray-900 ring-gray-200/50'
+              theme === 'dark' ? 'bg-gray-900 text-gray-100 ring-gray-700/50' : 'bg-white text-gray-900 ring-gray-200/50'
             }`}
             style={welcomeStyle}
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -1515,15 +1639,10 @@ export default function Tour({
             role="dialog"
             aria-labelledby={`tour-welcome-title-${tourId}`}
           >
-            {welcomeScreen.content &&
-            typeof welcomeScreen.content === 'object' &&
-            'title' in welcomeScreen.content ? (
+            {welcomeScreen.content && typeof welcomeScreen.content === 'object' && 'title' in welcomeScreen.content ? (
               <>
                 <div className="flex justify-between items-center mb-4">
-                  <h3
-                    id={`tour-welcome-title-${tourId}`}
-                    className="text-lg font-semibold"
-                  >
+                  <h3 id={`tour-welcome-title-${tourId}`} className="text-lg font-semibold">
                     {(welcomeScreen.content as PredefinedWelcomeConfig).title}
                   </h3>
                   <button
@@ -1554,9 +1673,7 @@ export default function Tour({
                       theme === 'dark' ? 'bg-blue-600 hover:bg-blue-500' : 'bg-blue-700 hover:bg-blue-600'
                     }`}
                   >
-                    {(welcomeScreen.content as PredefinedWelcomeConfig).startButtonText ||
-                      buttonLabels.start ||
-                      'Start Tour'}
+                    {(welcomeScreen.content as PredefinedWelcomeConfig).startButtonText || buttonLabels.start || 'Start Tour'}
                   </button>
                 </div>
               </>
@@ -1588,9 +1705,7 @@ export default function Tour({
           currentStep < filteredSteps.length && (
             <motion.div
               className={`tour-content-${tourId} absolute p-5 rounded-xl max-w-sm min-w-[200px] backdrop-blur-sm shadow-lg ring-1 ${
-                theme === 'dark'
-                  ? 'bg-gray-900 text-gray-100 ring-gray-700/50'
-                  : 'bg-white text-gray-900 ring-gray-200/50'
+                theme === 'dark' ? 'bg-gray-900 text-gray-100 ring-gray-700/50' : 'bg-white text-gray-900 ring-gray-200/50'
               }`}
               style={{
                 top: tooltipPosition.top,
@@ -1614,11 +1729,8 @@ export default function Tour({
               role="dialog"
               aria-labelledby={`tour-step-title-${tourId}-${currentStep}`}
             >
-              <div className="arrow" style={arrowStyle} />
-              <p
-                id={`tour-step-title-${tourId}-${currentStep}`}
-                className="text-sm mb-4"
-              >
+              <div className={`arrow tour-arrow-${tourId}`} style={arrowStyle} />
+              <p id={`tour-step-title-${tourId}-${currentStep}`} className="text-sm mb-4">
                 {getStepContent(filteredSteps[currentStep])}
               </p>
               <div className="mb-3">
