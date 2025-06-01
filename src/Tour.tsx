@@ -129,10 +129,11 @@ export default function Tour({
     if (!existingStyle) {
       const style = document.createElement('style');
       style.id = styleId;
+          // z-index: 2147483646 !important;
+
       style.textContent = `
         .tour-highlight-${tourId} {
           position: relative !important;
-          z-index: 2147483646 !important;
           box-shadow: 0 0 8px 2px rgba(29, 78, 216, 0.5) !important; /* Light theme: bg-blue-700 */
           border: 2px solid rgba(29, 78, 216, 0.7) !important;
           border-radius: 6px !important;
