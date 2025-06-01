@@ -655,7 +655,7 @@ export default function Tour({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        style={{ zIndex: 2147483647 }}
+        // style={{ zIndex: 2147483647 }}
       >
         {currentStep === -1 && welcomeScreen.enabled ? (
           <motion.div
