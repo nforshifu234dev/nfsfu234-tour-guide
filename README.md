@@ -1,29 +1,40 @@
-# NFSFU234TourGuide
 
-![npm](https://img.shields.io/npm/v/nfsfu234-tour-guide?style=for-the-badge)  
-![License](https://img.shields.io/npm/l/nfsfu234-tour-guide?style=for-the-badge)  
-![jsDelivr](https://data.jsdelivr.com/v1/package/npm/nfsfu234-tour-guide/badge)
+<h1 align="center">🎯 NFSFU234TourGuide</h1>
 
-**NFSFU234TourGuide** is a powerful, plug-and-play React library for crafting seamless, interactive, and fully customizable onboarding experiences. Skip the hassle of building tooltips, modals, or welcome screens from scratch — this library delivers a polished, responsive tour with minimal setup, so you can focus on creating stellar UIs.
+<p align="center"><i>
+Plug-and-play React tour guide library — perfect for onboarding, walkthroughs, and product tours. Built for devs who ship fast and style clean.
+</i></p>
+
+<p align="center">
+  <a href="https://www.npmjs.com/package/nfsfu234-tour-guide">
+    <img src="https://img.shields.io/npm/v/nfsfu234-tour-guide?style=for-the-badge" alt="NPM Version">
+  </a>
+  <a href="https://github.com/nforshifu234dev/nfsfu234-tour-guide/blob/main/LICENSE">
+    <img src="https://img.shields.io/npm/l/nfsfu234-tour-guide?style=for-the-badge" alt="License">
+  </a>
+  <a href="https://data.jsdelivr.com/v1/package/npm/nfsfu234-tour-guide">
+    <img src="https://data.jsdelivr.com/v1/package/npm/nfsfu234-tour-guide/badge" alt="jsDelivr">
+  </a>
+  <img src="https://img.shields.io/github/last-commit/nforshifu234dev/nfsfu234-tour-guide?style=for-the-badge" alt="Last Commit">
+  <img src="https://img.shields.io/github/stars/nforshifu234dev/nfsfu234-tour-guide?style=for-the-badge" alt="Stars">
+</p>
 
 ---
 
-## 🚀 Why Use It?
+## 🚀 Why Use NFSFU234TourGuide?
 
-- Onboarding in minutes with intuitive setup  
-- Modular steps with device-specific content and positioning  
-- Tailwind-powered styling for effortless customization  
-- Light and dark mode support out of the box  
-- Responsive design with mobile and desktop optimizations  
-- Advanced positioning with custom offsets and transforms  
-- Smart UX with smooth animations, progress indicators, and bulletproof z-index handling  
-- Keyboard navigation for accessibility  
+✅ Interactive onboarding, modals & walkthroughs  
+🎨 Built with TailwindCSS for slick UI styling  
+🌓 Dark mode & mobile-first support  
+📦 Works with React 18+, Framer Motion, Lucide  
+⚡ Minimal config, full control — no bloat  
+💻 Clean API + callback hooks for tracking
 
 ---
 
 ## 📦 Prerequisites
 
-Ensure your project includes the following **peer dependencies**:
+Install required **peer dependencies**:
 
 ```bash
 npm install react@^18.3.1 react-dom@^18.3.1 tailwindcss@^4 framer-motion@^12.12.1 lucide-react@^0.511.0
@@ -35,8 +46,7 @@ Or with Yarn:
 yarn add react@^18.3.1 react-dom@^18.3.1 tailwindcss@^4 framer-motion@^12.12.1 lucide-react@^0.511.0
 ```
 
-> **Note:** These are peer dependencies and must be installed separately.  
-> For Tailwind CSS, follow the [official setup guide](https://tailwindcss.com/docs/installation) to configure it properly.
+> 📌 **Heads up**: Tailwind needs to be configured properly. Follow the [Tailwind Docs](https://tailwindcss.com/docs/installation) if you haven’t set it up yet.
 
 ---
 
@@ -44,21 +54,15 @@ yarn add react@^18.3.1 react-dom@^18.3.1 tailwindcss@^4 framer-motion@^12.12.1 l
 
 ```bash
 npm install nfsfu234-tour-guide
-```
-
-Or with Yarn:
-
-```bash
+# or
 yarn add nfsfu234-tour-guide
 ```
 
 ---
 
-## 🧪 Basic Usage
+## 🧪 Quick Example
 
-Create a guided tour with a welcome screen and interactive steps, complete with callbacks for tracking user actions.
-
-```jsx
+```tsx
 'use client';
 import Tour from 'nfsfu234-tour-guide';
 
@@ -114,7 +118,6 @@ export default function MyApp() {
         onSkip={() => console.log('Tour skipped')}
         onComplete={() => console.log('Tour completed!')}
       />
-      {/* Your app UI here */}
       <div id="step1">Dashboard</div>
       <div id="step2">Feature</div>
       <button id="submit-btn">Submit</button>
@@ -123,104 +126,79 @@ export default function MyApp() {
 }
 ```
 
-> ⚠️ **Heads up**: Ensure target elements (e.g., `#step1`, `.class`) exist in the DOM before the tour starts.  
-> Use the `tourId` prop to uniquely identify each tour instance.
+> ⚠️ **Note**: Make sure your `target` elements exist in the DOM before triggering the tour.
 
 ---
 
-## 🔍 Props
+## 🧠 Props Reference
 
-| Prop            | Type                                                                  | Default       | Description                                                                 |
-|-----------------|-----------------------------------------------------------------------|---------------|-----------------------------------------------------------------------------|
-| `tourId`        | `string`                                                              | **Required**  | Unique identifier for the tour instance                                     |
-| `steps`         | `TourStep[]`                                                          | `[]`          | Array of step objects defining targets, content, and positioning            |
-| `theme`         | `'light'` \| `'dark'`                                                 | **Required**  | Theme for styling                                                           |
-| `deviceMode`    | `'desktop'` \| `'tablet'` \| `'mobile'`                               | Auto-detected | Force device mode                                                           |
-| `isActive`      | `boolean`                                                             | `true`        | Controls tour visibility                                                    |
-| `onComplete`    | `() => void`                                                          | `null`        | Callback when tour is completed                                             |
-| `onSkip`        | `() => void`                                                          | `null`        | Callback when tour is skipped                                               |
-| `onStart`       | `() => void`                                                          | `null`        | Callback when tour starts                                                   |
-| `onStepChange`  | `(stepIndex: number) => void`                                         | `null`        | Callback when step changes                                                  |
-| `welcomeScreen` | `{ enabled: boolean, content?: ReactNode | PredefinedWelcomeConfig }` | `{}`          | Configures welcome screen                                                   |
-| `buttonLabels`  | `{ next?, previous?, skip?, finish?, start?: string }`                | `{}`          | Custom labels for navigation buttons                                       |
-| `showProgressDots` | `boolean`                                                          | `false`       | Show progress dots below the progress bar                                  |
+| Prop            | Type    | Description |
+|-----------------|---------|-------------|
+| `tourId`        | `string` | Unique identifier |
+| `steps`         | `TourStep[]` | List of step objects |
+| `theme`         | `'light'` \| `'dark'` | Sets theme |
+| `isActive`      | `boolean` | Show/hide tour |
+| `welcomeScreen` | `WelcomeScreenConfig` | Optional intro screen |
+| `buttonLabels`  | `object` | Customize nav buttons |
+| `onStart`       | `() => void` | Callback |
+| `onStepChange`  | `(stepIndex: number) => void` | Callback |
+| `onSkip`        | `() => void` | Callback |
+| `onComplete`    | `() => void` | Callback |
+| `showProgressDots` | `boolean` | Progress UI |
 
 ---
 
 ## 🧩 TourStep Interface
 
-| Property       | Type                                                                 | Description                                         |
-|----------------|----------------------------------------------------------------------|-----------------------------------------------------|
-| `target`       | `string`                                                             | CSS selector (e.g., `#id`, `.class`)                |
-| `content`      | `string`                                                             | Default content                                     |
-| `contentDesktop` | `string`                                                           | Optional desktop-specific content                   |
-| `contentMobile` | `string`                                                            | Optional mobile-specific content                    |
-| `position`     | `'top'` \| `'bottom'` \| `'left'` \| `'right'` ...                   | Tooltip position relative to target (default: `bottom`) |
-| `customPosition` | `{ top?: number | string, left?: number | string, transform?: string }` | Custom positioning                                |
-| `offset`       | `{ x?: number, y?: number }`                                         | Fine-tune tooltip position                          |
-| `device`       | `'desktop'` \| `'mobile'` \| `'both'`                                | Restrict step to a device (default: `both`)         |
+| Property       | Type           | Description |
+|----------------|----------------|-------------|
+| `target`       | `string`       | CSS selector |
+| `content`      | `string`       | Tooltip message |
+| `position`     | `string`       | top, bottom, left, right |
+| `offset`       | `{ x, y }`     | Fine-tune placement |
+| `device`       | `'mobile'` \| `'desktop'` \| `'both'` | Show per device |
 
 ---
 
-## 📋 PredefinedWelcomeConfig Interface
+## ✨ Features Recap
 
-| Property           | Type                                       | Description                        |
-|--------------------|--------------------------------------------|------------------------------------|
-| `title`            | `string`                                   | Welcome screen title               |
-| `message`          | `string`                                   | Welcome screen message             |
-| `startButtonText`  | `string`                                   | Custom text for the start button   |
-| `position`         | `{ top?, left?, transform? }`              | Desktop positioning                |
-| `mobilePosition`   | `{ top?, left?, transform? }`              | Mobile positioning                 |
-
----
-
-## ✨ Features
-
-- **Responsive Design:** Mobile & desktop friendly with device-specific content
-- **Custom Positioning:** Use `position`, `offset`, and `customPosition` for precision
-- **Welcome Screen:** Optional, customizable welcome screen
-- **Progress Indicators:** Progress bar and optional dots
-- **Animations:** Smooth transitions using Framer Motion
-- **Z-Index Handling:** Bulletproof z-index using React Portals
-- **Keyboard Navigation:** Arrow keys, Enter, and Escape support
-- **Theme Support:** Light and dark modes with Tailwind CSS
+- 🧠 Intelligent positioning + offset controls  
+- 🖥️ Desktop/mobile specific content  
+- 🧑‍🎨 Custom themes via Tailwind  
+- 🧭 Welcome screen with title/message  
+- 🔢 Step dots + progress bar  
+- 🔌 Lifecycle hooks for analytics  
+- 🕹️ Keyboard navigation (← → Enter Esc)
 
 ---
 
-## 💡 Dev Tips
+## 📚 Docs & Extras
 
-- **Targeting Elements:** Use stable, unique selectors that are present at render time
-- **Dynamic Control:** Use `isActive` to start/stop the tour programmatically
-- **Analytics:** Hook into lifecycle with `onStart`, `onStepChange`, `onSkip`, and `onComplete`
-- **Custom Styling:** Override styles using Tailwind or `.tour-*` classes (e.g., `.tour-highlight-my-tour`)
-- **Testing Layouts:** Set `deviceMode` to test responsiveness without resizing your screen
-
----
-
-## 📚 Docs & Examples
-
-- **Documentation Site:** Coming soon  
-- **Examples Repo:** Coming soon  
-- **NPM Package:** [nfsfu234-tour-guide](https://www.npmjs.com/package/nfsfu234-tour-guide)
+- 📘 Full Docs: _Coming Soon_  
+- 🧪 Live Demos: _Coming Soon_  
+- 📦 NPM: [npmjs.com/package/nfsfu234-tour-guide](https://www.npmjs.com/package/nfsfu234-tour-guide)
 
 ---
 
 ## 🤝 Contributing
 
-Want to make NFSFU234TourGuide even better?  
-Check out our `CONTRIBUTING.md` for guidelines.  
-Look for issues tagged `good first issue` to dive in!
+PRs, issues, and improvements are welcome!  
+Start with [CONTRIBUTING.md](./CONTRIBUTING.md) — or hit up the issues tab.
 
 ---
 
 ## 📄 License
 
-MIT — free to use, modify, and contribute.  
-See the LICENSE file for details.
+MIT License — free for personal & commercial use.  
+Copyright © [NFORSHIFU234 Dev](https://github.com/NFORSHIFU234Dev)
 
 ---
 
 ## 🎯 Final Word
 
-NFSFU234TourGuide empowers developers to deliver slick, user-friendly onboarding experiences with minimal effort. From responsive tooltips to customizable welcome screens, it’s built to save you time and elevate your app’s UX.  
-**Plug it in, guide your users, and get back to building your masterpiece.**
+**NFSFU234TourGuide** is your no-fluff, high-impact tool for building beautiful, interactive walkthroughs fast.  
+Stay focused on what matters: building great experiences.
+
+> "Lead your users. Don’t just onboard — guide like a boss." 💼  
+> — Built by [NFORSHIFU234 Dev](https://github.com/NFORSHIFU234Dev)
+
