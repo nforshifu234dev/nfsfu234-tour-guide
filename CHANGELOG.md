@@ -2,8 +2,60 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
-### [0.2.21](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v0.2.20...v0.2.21) (2026-02-17)
+## [1.0.0](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v0.2.21...v1.0.0) (2026-02-17)
 
+### ⚠ BREAKING CHANGES
+
+* Complete rewrite of the Tour component architecture
+* Removed dependency on framer-motion and lucide-react
+* Changed tooltip rendering to use React portals and Intersection Observer
+* Simplified API - removed unused props and consolidated theme system
+* `tourDots` prop removed - use `showProgress` instead
+* Theme customization now uses `customTheme` prop instead of inline style overrides
+
+### Features
+
+* **Zero Dependencies**: Removed all external dependencies except React and ReactDOM ([#83](https://github.com/nforshifu234dev/nfsfu234-tour-guide/issues/83))
+* **Custom Theme System**: Added `customTheme` prop with `ThemeConfig` interface for complete color customization ([#84](https://github.com/nforshifu234dev/nfsfu234-tour-guide/issues/84))
+* **Smart Tooltip Positioning**: Tooltips now follow target elements using Intersection Observer and scroll listeners ([#85](https://github.com/nforshifu234dev/nfsfu234-tour-guide/issues/85))
+* **Body Scroll Lock**: Welcome screen now properly locks body scroll to prevent backdrop movement ([#86](https://github.com/nforshifu234dev/nfsfu234-tour-guide/issues/86))
+* **Device Filtering**: Steps are automatically filtered based on `device` prop (desktop/mobile/both) ([#87](https://github.com/nforshifu234dev/nfsfu234-tour-guide/issues/87))
+* **Mobile-Specific Content**: Added `contentMobile` prop to show different text on mobile devices ([#88](https://github.com/nforshifu234dev/nfsfu234-tour-guide/issues/88))
+* **Improved TypeScript Support**: Complete rewrite of type definitions with better inference ([#89](https://github.com/nforshifu234dev/nfsfu234-tour-guide/issues/89))
+* **Built-in Theme Presets**: Added light and dark theme presets with beautiful defaults ([#90](https://github.com/nforshifu234dev/nfsfu234-tour-guide/issues/90))
+
+### Bug Fixes
+
+* **Tooltip Positioning**: Fixed tooltips appearing off-screen or in wrong position ([#91](https://github.com/nforshifu234dev/nfsfu234-tour-guide/issues/91))
+* **Scroll Behavior**: Target elements now properly scroll into view and stay visible ([#92](https://github.com/nforshifu234dev/nfsfu234-tour-guide/issues/92))
+* **Welcome Screen**: Fixed backdrop scrolling issue on mobile devices ([#93](https://github.com/nforshifu234dev/nfsfu234-tour-guide/issues/93))
+* **TypeScript Errors**: Resolved declaration file issues with tsup/rollup ([#94](https://github.com/nforshifu234dev/nfsfu234-tour-guide/issues/94))
+* **Z-Index Conflicts**: Improved z-index management for overlay and tooltips ([#95](https://github.com/nforshifu234dev/nfsfu234-tour-guide/issues/95))
+
+### Performance Improvements
+
+* **Bundle Size**: Reduced bundle size from ~45KB to ~10KB (gzipped) by removing dependencies
+* **Render Optimization**: Tooltips only re-render when position changes
+* **Memory Management**: Proper cleanup of event listeners and observers
+
+### Documentation
+
+* **Complete README Rewrite**: Added comprehensive API reference with examples ([#96](https://github.com/nforshifu234dev/nfsfu234-tour-guide/issues/96))
+* **Real-World Examples**: Added SaaS onboarding, mobile-aware, and i18n examples
+* **Theme Customization Guide**: Detailed guide on creating custom themes
+* **Migration Guide**: Added migration guide from v0.x to v1.0 (see MIGRATION.md)
+* **Contributing Guide**: Updated CONTRIBUTING.md with current practices
+
+### Refactorings
+
+* **Component Architecture**: Split Tour into main component and Tooltip subcomponent
+* **State Management**: Simplified phase management (welcome → active → done)
+* **Positioning Logic**: Rewrote tooltip positioning with proper viewport handling
+* **Type System**: Reorganized interfaces for better maintainability
+
+---
+
+### [0.2.21](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v0.2.20...v0.2.21) (2026-02-17)
 
 ### Bug Fixes
 
@@ -11,25 +63,21 @@ All notable changes to this project will be documented in this file. See [standa
 
 ### [0.2.20](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v0.2.19...v0.2.20) (2026-02-17)
 
-
 ### Features
 
 * Enhance tooltip styling and positioning logic ([#81](https://github.com/nforshifu234dev/nfsfu234-tour-guide/issues/81)) ([feac0bf](https://github.com/nforshifu234dev/nfsfu234-tour-guide/commit/feac0bf376d59d982d67114144efc217d8d8906b))
 
 ### [0.2.19](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v0.2.18...v0.2.19) (2026-02-17)
 
-
 ### Features
 
 * Add tooltipStyle state for tooltip positioning ([#80](https://github.com/nforshifu234dev/nfsfu234-tour-guide/issues/80)) ([774fb1a](https://github.com/nforshifu234dev/nfsfu234-tour-guide/commit/774fb1a78651a8e173b1504b0305d98453d2105d))
-
 
 ### Bug Fixes
 
 * Refactor tooltip handling and cleanup comments ([#79](https://github.com/nforshifu234dev/nfsfu234-tour-guide/issues/79)) ([21ad03e](https://github.com/nforshifu234dev/nfsfu234-tour-guide/commit/21ad03e8019d5abc712ef95674e9d41aabe36d2a))
 
 ### [0.2.18](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v0.2.17...v0.2.18) (2026-02-17)
-
 
 ### Bug Fixes
 
@@ -38,13 +86,11 @@ All notable changes to this project will be documented in this file. See [standa
 
 ### [0.2.17](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v0.2.16...v0.2.17) (2026-02-17)
 
-
 ### Bug Fixes
 
 * Refactor Tour component and enhance tooltip logic ([#76](https://github.com/nforshifu234dev/nfsfu234-tour-guide/issues/76)) ([52453e9](https://github.com/nforshifu234dev/nfsfu234-tour-guide/commit/52453e963a2115e9c2ed3d043f807603fda0a12a))
 
 ### [0.2.16](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v0.2.15...v0.2.16) (2026-02-17)
-
 
 ### Features
 
@@ -52,11 +98,9 @@ All notable changes to this project will be documented in this file. See [standa
 
 ### [0.2.15](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v0.2.14...v0.2.15) (2026-02-17)
 
-
 ### Features
 
 * Update README and enhance Tour component with new features and styling options ([#72](https://github.com/nforshifu234dev/nfsfu234-tour-guide/issues/72)) ([bee54f2](https://github.com/nforshifu234dev/nfsfu234-tour-guide/commit/bee54f21973bd699ce34a8b2494adae7e23e0d76))
-
 
 ### Bug Fixes
 
@@ -64,7 +108,6 @@ All notable changes to this project will be documented in this file. See [standa
 * Add standard-version for version management ([#74](https://github.com/nforshifu234dev/nfsfu234-tour-guide/issues/74)) ([8260397](https://github.com/nforshifu234dev/nfsfu234-tour-guide/commit/8260397ff31431b774fbd6a4a1426f914214a504))
 
 ### [0.2.14](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v0.2.13...v0.2.14) (2026-02-17)
-
 
 ### Bug Fixes
 
@@ -76,13 +119,11 @@ All notable changes to this project will be documented in this file. See [standa
 
 ### [0.2.12](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v0.2.11...v0.2.12) (2025-06-01)
 
-
 ### Bug Fixes
 
 * testing new code 2 ([#26](https://github.com/nforshifu234dev/nfsfu234-tour-guide/issues/26)) ([ba9d7a7](https://github.com/nforshifu234dev/nfsfu234-tour-guide/commit/ba9d7a737ecbe50a9d4fdb5c915ed24a6e487f56))
 
 ### [0.2.11](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v0.2.10...v0.2.11) (2025-06-01)
-
 
 ### Bug Fixes
 
@@ -91,13 +132,11 @@ All notable changes to this project will be documented in this file. See [standa
 
 ### [0.2.10](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v0.2.9...v0.2.10) (2025-06-01)
 
-
 ### Bug Fixes
 
 * testing new code ([#23](https://github.com/nforshifu234dev/nfsfu234-tour-guide/issues/23)) ([5e73502](https://github.com/nforshifu234dev/nfsfu234-tour-guide/commit/5e73502daf0a4ea222ba667f01e3532491bc14a9))
 
 ### [0.2.9](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v0.2.8...v0.2.9) (2025-06-01)
-
 
 ### Bug Fixes
 
@@ -105,13 +144,11 @@ All notable changes to this project will be documented in this file. See [standa
 
 ### [0.2.8](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v0.2.7...v0.2.8) (2025-06-01)
 
-
 ### Bug Fixes
 
 * test removing zindex ([#21](https://github.com/nforshifu234dev/nfsfu234-tour-guide/issues/21)) ([268bde2](https://github.com/nforshifu234dev/nfsfu234-tour-guide/commit/268bde2d0af68f272f969d58dac3e1732380d301))
 
 ### [0.2.7](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v0.2.6...v0.2.7) (2025-06-01)
-
 
 ### Bug Fixes
 
@@ -119,13 +156,11 @@ All notable changes to this project will be documented in this file. See [standa
 
 ### [0.2.6](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v0.2.5...v0.2.6) (2025-05-26)
 
-
 ### Bug Fixes
 
 * firsttimeerror ([#17](https://github.com/nforshifu234dev/nfsfu234-tour-guide/issues/17)) ([ef7b97b](https://github.com/nforshifu234dev/nfsfu234-tour-guide/commit/ef7b97b41520b43af6bbdc54d7da1e2ca66b70ce))
 
 ### [0.2.5](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v0.2.4...v0.2.5) (2025-05-17)
-
 
 ### Bug Fixes
 
@@ -133,11 +168,9 @@ All notable changes to this project will be documented in this file. See [standa
 
 ### [0.2.4](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v0.2.0...v0.2.4) (2025-05-17)
 
-
 ### Features
 
 * adding new files to the project ([a3a16a6](https://github.com/nforshifu234dev/nfsfu234-tour-guide/commit/a3a16a6644e87e51a9c71101b203ce90b79344c9))
-
 
 ### Bug Fixes
 
@@ -152,11 +185,9 @@ All notable changes to this project will be documented in this file. See [standa
 
 ### [0.2.3](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v0.2.0...v0.2.3) (2025-05-17)
 
-
 ### Features
 
 * adding new files to the project ([a3a16a6](https://github.com/nforshifu234dev/nfsfu234-tour-guide/commit/a3a16a6644e87e51a9c71101b203ce90b79344c9))
-
 
 ### Bug Fixes
 
