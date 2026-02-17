@@ -33,18 +33,26 @@
     "lint": "eslint 'src/**/*.{ts,tsx}' --fix",
     "release": "standard-version"
   },
-  "engines": {
-    "node": ">=14.0.0"
-  },
   "keywords": [
     "react",
-    "onboarding",
+    "tour",
     "tour-guide",
+    "onboarding",
+    "walkthrough",
+    "tutorial",
+    "tooltip",
     "product-tour",
+    "user-guide",
+    "nfsfu234",
     "react-tour",
-    "user-guidance"
+    "step-by-step",
+    "interactive-guide"
   ],
-  "author": "NFORSHIFU234 Dev",
+  "author": {
+    "name": "NFORSHIFU234 Dev",
+    "email": "info@nforshifu234dev.com",
+    "url": "https://github.com/nforshifu234dev"
+  },
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -58,7 +66,6 @@
     "react": "^18.0.0 || ^19.0.0",
     "react-dom": "^18.0.0 || ^19.0.0"
   },
-  "dependencies": {},
   "devDependencies": {
     "@types/node": "^22.15.18",
     "@types/react": "^18.3.1",
@@ -70,5 +77,8 @@
   "release": {
     "commitUrlFormat": "https://github.com/nforshifu234dev/nfsfu234-tour-guide/commit/{{hash}}",
     "issueUrlFormat": "https://github.com/nforshifu234dev/nfsfu234-tour-guide/issues/{{id}}"
+  },
+  "engines": {
+    "node": ">=16.0.0"
   }
 }
