@@ -73,7 +73,6 @@ export default function Tour({
   const [currentStep, setCurrentStep] = useState(0);
   const [visible, setVisible] = useState(isActive);
   const [mounted, setMounted] = useState(false);
-  const [tooltipStyle, setTooltipStyle] = useState<React.CSSProperties>({});
 
   const tooltipRef = useRef<HTMLDivElement>(null);
 
@@ -81,7 +80,7 @@ export default function Tour({
     setMounted(true);
   }, []);
 
-  // Cleanup highlights on unmount or phase change
+  // Cleanup all highlights on unmount or tour end
   useEffect(() => {
     return () => {
       document.querySelectorAll(`.${highlightClassName}`).forEach(el => {
@@ -90,7 +89,7 @@ export default function Tour({
     };
   }, [highlightClassName]);
 
-  // Handle step highlighting, scrolling, and tooltip positioning
+  // Per-step: highlight, scroll, position tooltip
   useEffect(() => {
     if (!visible || !mounted || phase !== 'step') return;
 
@@ -100,19 +99,21 @@ export default function Tour({
     const target = document.querySelector(step.target) as HTMLElement;
     if (!target) return;
 
-    // Highlight
+    // 1. Highlight
     target.classList.add(highlightClassName);
 
-    // Scroll to target
+    // 2. Scroll smoothly
     target.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
 
-    // Wait for scroll to finish before positioning tooltip
+    // 3. Wait for scroll/reflow, then position tooltip
     const timer = setTimeout(() => {
+      if (!tooltipRef.current) return;
+
       const rect = target.getBoundingClientRect();
       const vw = window.innerWidth;
       const vh = window.innerHeight;
-      const tw = tooltipRef.current?.offsetWidth || 320;
-      const th = tooltipRef.current?.offsetHeight || 140;
+      const tw = tooltipRef.current.offsetWidth || 320;
+      const th = tooltipRef.current.offsetHeight || 140;
 
       let top: number = 0;
       let left: number = 0;
@@ -150,12 +151,12 @@ export default function Tour({
           break;
       }
 
-      // Clamp to viewport
+      // Clamp to viewport edges
       top = Math.max(16, Math.min(top, vh - th - 16));
       left = Math.max(16, Math.min(left, vw - tw - 16));
 
       setTooltipStyle({ top, left, transform });
-    }, 300); // small delay for scroll animation to settle
+    }, 400); // 400ms delay — enough for smooth scroll to settle
 
     return () => {
       clearTimeout(timer);
@@ -163,7 +164,7 @@ export default function Tour({
     };
   }, [currentStep, visible, mounted, phase, steps, highlightClassName]);
 
-  // Navigation
+  // Navigation handlers
   const handleStart = () => {
     setPhase('step');
     setCurrentStep(0);
@@ -201,10 +202,10 @@ export default function Tour({
 
   return (
     <>
-      {/* Persistent backdrop */}
+      {/* Persistent backdrop - always present during tour */}
       <div className={`fixed inset-0 bg-black/60 z-[9998] ${overlayClassName}`} onClick={handleSkip} aria-hidden="true" />
 
-      {/* Welcome Phase */}
+      {/* Welcome Phase - full-screen centered modal */}
       {phase === 'welcome' && welcomeScreen.enabled && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none">
           <div
@@ -238,9 +239,10 @@ export default function Tour({
         </div>
       )}
 
-      {/* Step Phase - Tooltip near target */}
+      {/* Step Phase - new tooltip per step, positioned near target */}
       {phase === 'step' && (
         <div
+          key={currentStep} // ← key forces remount per step
           ref={tooltipRef}
           className={`
             fixed z-[9999] p-5 sm:p-6 rounded-xl shadow-xl border max-w-sm w-[90%]
@@ -283,7 +285,7 @@ export default function Tour({
             </div>
           </div>
 
-          {/* Arrow pointing to target */}
+          {/* Arrow */}
           <div
             className="absolute w-0 h-0 border-8 border-transparent"
             style={{
