@@ -2,65 +2,8 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import type { ThemeConfig, ButtonLabels, WelcomeScreenConfig, TourStep, TourProps } from './types';
 
-// ════════════════════════════════════════════════════════════════════════════════
-// TYPES
-// ════════════════════════════════════════════════════════════════════════════════
-
-export interface TourStep {
-  target: string;
-  content: string;
-  contentMobile?: string;
-  position?: 'top' | 'bottom' | 'left' | 'right';
-  offset?: { x?: number; y?: number };
-  device?: 'desktop' | 'mobile' | 'both';
-}
-
-export interface WelcomeScreenConfig {
-  enabled: boolean;
-  title?: string;
-  message?: string;
-  startButtonText?: string;
-}
-
-export interface ButtonLabels {
-  next?: string;
-  previous?: string;
-  skip?: string;
-  finish?: string;
-  start?: string;
-}
-
-export interface ThemeConfig {
-  backdrop?: string;
-  tooltipBg?: string;
-  tooltipText?: string;
-  tooltipBorder?: string;
-  buttonBg?: string;
-  buttonText?: string;
-  progressBar?: string;
-  highlightRing?: string;
-}
-
-export interface TourProps {
-  tourId?: string;
-  steps: TourStep[];
-  isActive?: boolean;
-  theme?: 'light' | 'dark' | 'custom';
-  customTheme?: ThemeConfig;
-  accentColor?: string;
-  onComplete?: () => void;
-  onSkip?: () => void;
-  onStart?: () => void;
-  onStepChange?: (index: number) => void;
-  welcomeScreen?: WelcomeScreenConfig;
-  buttonLabels?: ButtonLabels;
-  showProgress?: boolean;
-  className?: string;
-  overlayClassName?: string;
-  tooltipClassName?: string;
-  highlightClassName?: string;
-}
 
 // ════════════════════════════════════════════════════════════════════════════════
 // THEME PRESETS
@@ -100,7 +43,7 @@ const DEFAULT_BUTTON_LABELS: Required<ButtonLabels> = {
 const DEFAULT_WELCOME_SCREEN: Required<WelcomeScreenConfig> = {
   enabled: false,
   title: 'Welcome',
-  message: 'Let me guide you through the key features.',
+  message: 'Let\'s guide you through the key features.',
   startButtonText: 'Start Tour',
 };
 
@@ -452,7 +395,7 @@ export default function Tour({
   // Merge configs
   const welcomeConfig = { ...DEFAULT_WELCOME_SCREEN, ...welcomeScreen };
   const labels = { ...DEFAULT_BUTTON_LABELS, ...buttonLabels };
-  const themeConfig = customTheme || THEME_PRESETS[theme] || THEME_PRESETS.dark;
+  const themeConfig = customTheme || (theme !== 'custom' ? THEME_PRESETS[theme] : THEME_PRESETS.dark);
 
   // Filter steps by device
   const filteredSteps = steps.filter(shouldShowStep);
