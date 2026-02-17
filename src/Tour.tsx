@@ -67,10 +67,12 @@ export default function Tour({
   tooltipClassName = '',
   highlightClassName = 'tour-highlight',
 }: TourProps) {
-  const [currentStep, setCurrentStep] = useState(welcomeScreen.enabled ? -1 : 0);
+  const [phase, setPhase] = useState<'welcome' | 'step' | 'done'>(
+    welcomeScreen.enabled ? 'welcome' : steps.length > 0 ? 'step' : 'done'
+  );
+  const [currentStep, setCurrentStep] = useState(0);
   const [visible, setVisible] = useState(isActive);
   const [mounted, setMounted] = useState(false);
-  const [tooltipStyle, setTooltipStyle] = useState<React.CSSProperties>({});
 
   const tooltipRef = useRef<HTMLDivElement>(null);
 
@@ -78,9 +80,18 @@ export default function Tour({
     setMounted(true);
   }, []);
 
-  // Highlight + scroll + tooltip positioning
+  // Cleanup on unmount / done
   useEffect(() => {
-    if (!visible || !mounted || currentStep < 0) return;
+    return () => {
+      document.querySelectorAll(`.${highlightClassName}`).forEach(el => {
+        el.classList.remove(highlightClassName);
+      });
+    };
+  }, [highlightClassName]);
+
+  // Highlight + scroll + position tooltip
+  useEffect(() => {
+    if (!visible || !mounted || phase !== 'step') return;
 
     const step = steps[currentStep];
     if (!step) return;
@@ -88,15 +99,18 @@ export default function Tour({
     const target = document.querySelector(step.target) as HTMLElement;
     if (!target) return;
 
+    // Highlight
     target.classList.add(highlightClassName);
+
+    // Scroll
     target.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
 
-    // Position tooltip near target
+    // Position tooltip
     const rect = target.getBoundingClientRect();
     const vw = window.innerWidth;
     const vh = window.innerHeight;
-    const tooltipW = tooltipRef.current?.offsetWidth || 320;
-    const tooltipH = tooltipRef.current?.offsetHeight || 160;
+    const tw = tooltipRef.current?.offsetWidth || 320;
+    const th = tooltipRef.current?.offsetHeight || 140;
 
     let top: number = 0;
     let left: number = 0;
@@ -108,7 +122,7 @@ export default function Tour({
 
     switch (pos) {
       case 'top':
-        top = rect.top - tooltipH - oy;
+        top = rect.top - th - oy;
         left = rect.left + rect.width / 2 + ox;
         transform = 'translateX(-50%)';
         break;
@@ -119,33 +133,40 @@ export default function Tour({
         break;
       case 'left':
         top = rect.top + rect.height / 2 + oy;
-        left = rect.left - tooltipW - 16 + ox;
+        left = rect.left - tw - 24 + ox;
         transform = 'translateY(-50%)';
         break;
       case 'right':
         top = rect.top + rect.height / 2 + oy;
-        left = rect.right + 16 + ox;
+        left = rect.right + 24 + ox;
         transform = 'translateY(-50%)';
         break;
       case 'center':
-      default:
         top = rect.top + rect.height / 2;
         left = rect.left + rect.width / 2;
         transform = 'translate(-50%, -50%)';
+        break;
     }
 
-    // Clamp to viewport
-    top = Math.max(16, Math.min(top, vh - tooltipH - 16));
-    left = Math.max(16, Math.min(left, vw - tooltipW - 16));
+    // Clamp
+    top = Math.max(16, Math.min(top, vh - th - 16));
+    left = Math.max(16, Math.min(left, vw - tw - 16));
 
     setTooltipStyle({ top, left, transform });
 
     return () => {
       target.classList.remove(highlightClassName);
     };
-  }, [currentStep, visible, mounted, steps, highlightClassName]);
+  }, [currentStep, visible, mounted, phase, steps, highlightClassName]);
 
   // Navigation
+  const handleStart = () => {
+    setPhase('step');
+    setCurrentStep(0);
+    onStart?.();
+    onStepChange?.(0);
+  };
+
   const next = () => {
     if (currentStep < steps.length - 1) {
       const nextIndex = currentStep + 1;
@@ -153,12 +174,13 @@ export default function Tour({
       onStepChange?.(nextIndex);
     } else {
       setVisible(false);
+      setPhase('done');
       onComplete?.();
     }
   };
 
   const prev = () => {
-    if (currentStep > (welcomeScreen.enabled ? -1 : 0)) {
+    if (currentStep > 0) {
       const prevIndex = currentStep - 1;
       setCurrentStep(prevIndex);
       onStepChange?.(prevIndex);
@@ -167,68 +189,69 @@ export default function Tour({
 
   const skip = () => {
     setVisible(false);
+    setPhase('done');
     onSkip?.();
-  };
-
-  const start = () => {
-    setCurrentStep(0);
-    onStart?.();
-    onStepChange?.(0);
   };
 
   if (!mounted || !visible) return null;
 
-  const step = currentStep >= 0 && currentStep < steps.length ? steps[currentStep] : null;
-
   return (
-    <div className={`fixed inset-0 z-[9999] ${overlayClassName} ${className}`}>
-      {/* Full-screen backdrop */}
-      <div className="absolute inset-0 bg-black/60" onClick={skip} aria-hidden="true" />
+    <>
+      {/* Persistent backdrop */}
+      <div className="fixed inset-0 bg-black/60 z-[9998]" onClick={skip} aria-hidden="true" />
 
-      {/* Welcome screen - centered */}
-      {currentStep === -1 && welcomeScreen.enabled && (
+      {/* Phase: Welcome */}
+      {phase === 'welcome' && welcomeScreen.enabled && (
         <div
           className={`
-            fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2
-            p-6 sm:p-8 rounded-2xl shadow-2xl border max-w-md w-[90%]
-            ${theme === 'dark' ? 'bg-zinc-900/95 text-white border-zinc-700' : 'bg-white/95 text-zinc-900 border-zinc-200'}
-            pointer-events-auto
+            fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none
+            ${overlayClassName}
           `}
         >
-          <div className="flex items-start justify-between mb-5">
-            <h2 className="text-2xl font-bold">{welcomeScreen.title || 'Welcome'}</h2>
-            <button onClick={skip} aria-label="Skip tour" className="p-2 hover:opacity-80">
-              ×
-            </button>
-          </div>
-          <p className="mb-6 whitespace-pre-line">{welcomeScreen.message || 'Let me guide you.'}</p>
-          <div className="flex justify-end gap-4">
-            <button onClick={skip} className="text-sm opacity-80 hover:opacity-100">
-              {buttonLabels.skip || 'Skip'}
-            </button>
-            <button
-              onClick={start}
-              className={`px-6 py-3 rounded-xl font-medium text-white shadow-md`}
-              style={{ backgroundColor: accentColor }}
-            >
-              {welcomeScreen.startButtonText || buttonLabels.start || 'Start'}
-            </button>
+          <div
+            className={`
+              pointer-events-auto p-6 sm:p-8 rounded-2xl shadow-2xl border max-w-md w-[90%]
+              ${theme === 'dark' ? 'bg-zinc-900/95 text-white border-zinc-700' : 'bg-white/95 text-zinc-900 border-zinc-200'}
+            `}
+          >
+            <div className="flex items-start justify-between mb-5">
+              <h2 className="text-2xl font-bold">{welcomeScreen.title || 'Welcome'}</h2>
+              <button onClick={skip} aria-label="Skip tour" className="p-2 hover:opacity-80 text-2xl">
+                ×
+              </button>
+            </div>
+            <p className="mb-6 whitespace-pre-line text-base leading-relaxed">
+              {welcomeScreen.message || 'Let me guide you through the key parts.'}
+            </p>
+            <div className="flex justify-end gap-4">
+              <button onClick={skip} className="text-sm opacity-80 hover:opacity-100">
+                {buttonLabels.skip || 'Skip Tour'}
+              </button>
+              <button
+                onClick={handleStart}
+                className={`px-6 py-3 rounded-xl font-medium text-white shadow-md`}
+                style={{ backgroundColor: accentColor }}
+              >
+                {welcomeScreen.startButtonText || buttonLabels.start || 'Start Tour 🔥'}
+              </button>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Tooltip - positioned near target */}
-      {step && (
+      {/* Phase: Step tooltip */}
+      {phase === 'step' && (
         <div
+          ref={tooltipRef}
           className={`
-            fixed p-5 sm:p-6 rounded-xl shadow-xl border max-w-sm w-[90%]
-            ${theme === 'dark' ? 'bg-zinc-900/95 text-white border-zinc-700' : 'bg-white/95 text-zinc-900 border-zinc-200'}
+            fixed z-[9999] p-5 sm:p-6 rounded-xl shadow-xl border max-w-sm w-[90%]
             pointer-events-auto
+            ${theme === 'dark' ? 'bg-zinc-900/95 text-white border-zinc-700' : 'bg-white/95 text-zinc-900 border-zinc-200'}
             ${tooltipClassName}
           `}
           style={tooltipStyle}
         >
-          <p className="mb-4 leading-relaxed">{step.content}</p>
+          <p className="mb-4 text-base leading-relaxed">{steps[currentStep]?.content}</p>
 
           {showProgress && (
             <div className="h-1 bg-zinc-700 rounded-full mb-5 overflow-hidden">
@@ -265,17 +288,17 @@ export default function Tour({
           <div
             className="absolute w-0 h-0 border-8 border-transparent"
             style={{
-              ...getArrowStyle(step.position),
+              ...getArrowStyle(steps[currentStep]?.position),
               borderColor: theme === 'dark' ? '#ffffff' : '#111827',
             }}
           />
         </div>
       )}
-    </div>
+    </>
   );
 }
 
-// Arrow position helper
+// Arrow helper
 function getArrowStyle(position?: string) {
   switch (position) {
     case 'top':
