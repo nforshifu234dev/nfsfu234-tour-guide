@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 
 // ────────────────────────────────────────────────
 // Types
@@ -10,7 +11,7 @@ export interface TourStep {
   target: string;
   content: string;
   contentMobile?: string;
-  position?: 'top' | 'bottom' | 'left' | 'right' | 'center';
+  position?: 'top' | 'bottom' | 'left' | 'right';
   offset?: { x?: number; y?: number };
   device?: 'desktop' | 'mobile' | 'both';
 }
@@ -39,14 +40,205 @@ export interface TourProps {
     start?: string;
   };
   showProgress?: boolean;
-  className?: string;
-  overlayClassName?: string;
-  tooltipClassName?: string;
   highlightClassName?: string;
 }
 
 // ────────────────────────────────────────────────
-// Main Component
+// Tooltip Component (renders relative to target)
+// ────────────────────────────────────────────────
+
+function Tooltip({
+  step,
+  stepIndex,
+  totalSteps,
+  theme,
+  accentColor,
+  showProgress,
+  buttonLabels,
+  onNext,
+  onPrevious,
+  onSkip,
+}: {
+  step: TourStep;
+  stepIndex: number;
+  totalSteps: number;
+  theme: 'light' | 'dark';
+  accentColor: string;
+  showProgress: boolean;
+  buttonLabels: any;
+  onNext: () => void;
+  onPrevious: () => void;
+  onSkip: () => void;
+}) {
+  const [targetElement, setTargetElement] = useState<HTMLElement | null>(null);
+  const [tooltipStyle, setTooltipStyle] = useState<React.CSSProperties>({});
+  const tooltipRef = useRef<HTMLDivElement>(null);
+
+  // Find and observe target element
+  useEffect(() => {
+    const target = document.querySelector(step.target) as HTMLElement;
+    if (!target) {
+      console.warn(`Tour: Target "${step.target}" not found`);
+      return;
+    }
+
+    setTargetElement(target);
+
+    // Scroll target into view
+    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    // Add highlight class
+    target.style.position = 'relative';
+    target.style.zIndex = '9999';
+    target.classList.add('tour-active-target');
+
+    // Intersection observer to keep tooltip visible
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) {
+            // Target is out of view, scroll it back
+            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        });
+      },
+      { threshold: 0.5 }
+    );
+
+    observer.observe(target);
+
+    return () => {
+      observer.disconnect();
+      target.classList.remove('tour-active-target');
+      target.style.zIndex = '';
+    };
+  }, [step.target]);
+
+  // Calculate tooltip position relative to target
+  useEffect(() => {
+    if (!targetElement || !tooltipRef.current) return;
+
+    const updatePosition = () => {
+      const targetRect = targetElement.getBoundingClientRect();
+      const tooltipRect = tooltipRef.current!.getBoundingClientRect();
+      
+      const position = step.position || 'bottom';
+      const offsetX = step.offset?.x ?? 0;
+      const offsetY = step.offset?.y ?? 16;
+
+      let top = 0;
+      let left = 0;
+
+      switch (position) {
+        case 'top':
+          top = targetRect.top - tooltipRect.height - offsetY;
+          left = targetRect.left + targetRect.width / 2 - tooltipRect.width / 2 + offsetX;
+          break;
+        case 'bottom':
+          top = targetRect.bottom + offsetY;
+          left = targetRect.left + targetRect.width / 2 - tooltipRect.width / 2 + offsetX;
+          break;
+        case 'left':
+          top = targetRect.top + targetRect.height / 2 - tooltipRect.height / 2 + offsetY;
+          left = targetRect.left - tooltipRect.width - offsetY;
+          break;
+        case 'right':
+          top = targetRect.top + targetRect.height / 2 - tooltipRect.height / 2 + offsetY;
+          left = targetRect.right + offsetY;
+          break;
+      }
+
+      // Keep in viewport
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      top = Math.max(16, Math.min(top, vh - tooltipRect.height - 16));
+      left = Math.max(16, Math.min(left, vw - tooltipRect.width - 16));
+
+      setTooltipStyle({
+        position: 'fixed',
+        top: `${top}px`,
+        left: `${left}px`,
+        zIndex: 10000,
+      });
+    };
+
+    // Initial position
+    requestAnimationFrame(() => {
+      requestAnimationFrame(updatePosition);
+    });
+
+    // Update on scroll and resize
+    const handleUpdate = () => requestAnimationFrame(updatePosition);
+    window.addEventListener('scroll', handleUpdate, true);
+    window.addEventListener('resize', handleUpdate);
+
+    return () => {
+      window.removeEventListener('scroll', handleUpdate, true);
+      window.removeEventListener('resize', handleUpdate);
+    };
+  }, [targetElement, step.position, step.offset]);
+
+  if (!targetElement) return null;
+
+  return createPortal(
+    <div
+      ref={tooltipRef}
+      className={`
+        p-5 sm:p-6 rounded-xl shadow-2xl border max-w-sm w-[90%] sm:w-auto
+        ${theme === 'dark' ? 'bg-zinc-900/98 text-white border-zinc-700' : 'bg-white/98 text-zinc-900 border-zinc-200'}
+      `}
+      style={tooltipStyle}
+    >
+      <p className="mb-4 text-base leading-relaxed">{step.content}</p>
+
+      {showProgress && (
+        <div className="h-1 bg-zinc-700 rounded-full mb-5 overflow-hidden">
+          <div
+            className="h-full transition-all duration-300"
+            style={{
+              width: `${((stepIndex + 1) / totalSteps) * 100}%`,
+              backgroundColor: accentColor,
+            }}
+          />
+        </div>
+      )}
+
+      <div className="flex justify-between items-center">
+        <button onClick={onSkip} className="text-sm opacity-80 hover:opacity-100">
+          {buttonLabels.skip || 'Skip'}
+        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={onPrevious}
+            disabled={stepIndex === 0}
+            className={`px-4 py-2 rounded text-sm ${
+              stepIndex === 0 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-zinc-800'
+            }`}
+          >
+            {buttonLabels.previous || 'Back'}
+          </button>
+          <button
+            onClick={onNext}
+            className="px-5 py-2 rounded text-sm font-medium text-white"
+            style={{ backgroundColor: accentColor }}
+          >
+            {stepIndex < totalSteps - 1 ? buttonLabels.next || 'Next' : buttonLabels.finish || 'Finish'}
+          </button>
+        </div>
+      </div>
+
+      {/* Arrow pointing to target */}
+      <div
+        className="absolute w-0 h-0 border-8 border-transparent"
+        style={getArrowStyle(step.position, theme)}
+      />
+    </div>,
+    document.body
+  );
+}
+
+// ────────────────────────────────────────────────
+// Main Tour Component
 // ────────────────────────────────────────────────
 
 export default function Tour({
@@ -62,158 +254,20 @@ export default function Tour({
   welcomeScreen = { enabled: false },
   buttonLabels = {},
   showProgress = true,
-  className = '',
-  overlayClassName = '',
-  tooltipClassName = '',
   highlightClassName = 'tour-highlight',
 }: TourProps) {
-  const [phase, setPhase] = useState<'welcome' | 'step' | 'done'>(
-    welcomeScreen.enabled ? 'welcome' : steps.length > 0 ? 'step' : 'done'
+  const [phase, setPhase] = useState<'welcome' | 'active' | 'done'>(
+    welcomeScreen.enabled ? 'welcome' : steps.length > 0 ? 'active' : 'done'
   );
   const [currentStep, setCurrentStep] = useState(0);
-  const [visible, setVisible] = useState(isActive);
   const [mounted, setMounted] = useState(false);
-  const [tooltipStyle, setTooltipStyle] = useState<React.CSSProperties>({
-    top: '50%',
-    left: '50%',
-    transform: 'translate(-50%, -50%)',
-    opacity: 0,
-  });
-
-  const tooltipRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Cleanup highlights
-  useEffect(() => {
-    return () => {
-      document.querySelectorAll(`.${highlightClassName}`).forEach(el => {
-        el.classList.remove(highlightClassName);
-      });
-    };
-  }, [highlightClassName]);
-
-  // Position tooltip when step changes or window resizes
-  useEffect(() => {
-    if (!visible || !mounted || phase !== 'step') return;
-
-    const step = steps[currentStep];
-    if (!step) return;
-
-    const target = document.querySelector(step.target) as HTMLElement;
-    if (!target) {
-      console.warn(`Tour: Target "${step.target}" not found in DOM`);
-      return;
-    }
-
-    target.classList.add(highlightClassName);
-    target.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
-
-    const updatePosition = () => {
-      // Wait for tooltip ref to be ready
-      if (!tooltipRef.current) {
-        console.log('Tour: Tooltip ref not ready, retrying...');
-        requestAnimationFrame(updatePosition);
-        return;
-      }
-
-      const rect = target.getBoundingClientRect();
-      const vw = window.innerWidth;
-      const vh = window.innerHeight;
-      
-      // Get actual tooltip dimensions
-      const tw = tooltipRef.current.offsetWidth;
-      const th = tooltipRef.current.offsetHeight;
-
-      // If dimensions are still 0, retry on next frame
-      if (tw === 0 || th === 0) {
-        console.log('Tour: Tooltip dimensions not ready, retrying...');
-        requestAnimationFrame(updatePosition);
-        return;
-      }
-
-      console.log('Tour: Target rect:', rect);
-      console.log('Tour: Tooltip size:', { width: tw, height: th });
-
-      let top = 0;
-      let left = 0;
-      let transform = '';
-
-      const pos = step.position || 'bottom';
-      const ox = step.offset?.x ?? 0;
-      const oy = step.offset?.y ?? 16;
-
-      switch (pos) {
-        case 'top':
-          top = rect.top - th - oy;
-          left = rect.left + rect.width / 2 + ox;
-          transform = 'translateX(-50%)';
-          break;
-        case 'bottom':
-          top = rect.bottom + oy;
-          left = rect.left + rect.width / 2 + ox;
-          transform = 'translateX(-50%)';
-          break;
-        case 'left':
-          top = rect.top + rect.height / 2 + oy;
-          left = rect.left - tw - 24 + ox;
-          transform = 'translateY(-50%)';
-          break;
-        case 'right':
-          top = rect.top + rect.height / 2 + oy;
-          left = rect.right + 24 + ox;
-          transform = 'translateY(-50%)';
-          break;
-        case 'center':
-          top = rect.top + rect.height / 2;
-          left = rect.left + rect.width / 2;
-          transform = 'translate(-50%, -50%)';
-          break;
-      }
-
-      // Keep tooltip in viewport
-      top = Math.max(16, Math.min(top, vh - th - 16));
-      left = Math.max(16, Math.min(left, vw - tw - 16));
-
-      console.log('Tour: Calculated position:', { top, left, transform });
-
-      setTooltipStyle({
-        top: `${top}px`,
-        left: `${left}px`,
-        transform,
-        opacity: 1,
-        transition: 'top 0.3s ease, left 0.3s ease, opacity 0.3s ease',
-      });
-    };
-
-    // Start with invisible tooltip
-    setTooltipStyle(prev => ({ ...prev, opacity: 0 }));
-
-    // Start positioning after scroll completes
-    const scrollTimer = setTimeout(() => {
-      // Use requestAnimationFrame to ensure DOM is ready
-      requestAnimationFrame(updatePosition);
-    }, 600);
-
-    // Handle window resize
-    const handleResize = () => {
-      requestAnimationFrame(updatePosition);
-    };
-    
-    window.addEventListener('resize', handleResize);
-
-    return () => {
-      clearTimeout(scrollTimer);
-      window.removeEventListener('resize', handleResize);
-      target.classList.remove(highlightClassName);
-    };
-  }, [currentStep, visible, mounted, phase, steps, highlightClassName]);
-
-  // Navigation
   const handleStart = () => {
-    setPhase('step');
+    setPhase('active');
     setCurrentStep(0);
     onStart?.();
     onStepChange?.(0);
@@ -225,7 +279,6 @@ export default function Tour({
       setCurrentStep(next);
       onStepChange?.(next);
     } else {
-      setVisible(false);
       setPhase('done');
       onComplete?.();
     }
@@ -240,35 +293,45 @@ export default function Tour({
   };
 
   const handleSkip = () => {
-    setVisible(false);
     setPhase('done');
     onSkip?.();
   };
 
-  if (!mounted || !visible) return null;
+  if (!mounted || !isActive || phase === 'done') return null;
 
   return (
     <>
-      {/* Backdrop */}
-      <div className={`fixed inset-0 bg-black/60 z-[9998] ${overlayClassName}`} onClick={handleSkip} aria-hidden="true" />
+      {/* Backdrop overlay */}
+      <div
+        className="fixed inset-0 bg-black/60 z-[9998]"
+        onClick={handleSkip}
+        style={{ width: '100vw', height: '100vh' }}
+      />
 
-      {/* Welcome */}
+      {/* Welcome Screen */}
       {phase === 'welcome' && welcomeScreen.enabled && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none">
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center"
+          style={{ width: '100vw', height: '100vh' }}
+        >
           <div
             className={`
-              pointer-events-auto p-6 sm:p-8 rounded-2xl shadow-2xl border max-w-md w-[90%]
-              ${theme === 'dark' ? 'bg-zinc-900/95 text-white border-zinc-700' : 'bg-white/95 text-zinc-900 border-zinc-200'}
+              p-6 sm:p-8 rounded-2xl shadow-2xl border max-w-md w-[90%]
+              ${theme === 'dark' ? 'bg-zinc-900/98 text-white border-zinc-700' : 'bg-white/98 text-zinc-900 border-zinc-200'}
             `}
           >
             <div className="flex items-start justify-between mb-5">
               <h2 className="text-2xl font-bold">{welcomeScreen.title || 'Welcome'}</h2>
-              <button onClick={handleSkip} aria-label="Skip tour" className="p-2 hover:opacity-80 text-2xl leading-none">
+              <button
+                onClick={handleSkip}
+                aria-label="Skip tour"
+                className="p-2 hover:opacity-80 text-2xl leading-none"
+              >
                 ×
               </button>
             </div>
             <p className="mb-6 whitespace-pre-line text-base leading-relaxed">
-              {welcomeScreen.message || 'Let me guide you through the key parts.'}
+              {welcomeScreen.message || 'Let me guide you through the key features.'}
             </p>
             <div className="flex justify-end gap-4">
               <button onClick={handleSkip} className="text-sm opacity-80 hover:opacity-100">
@@ -276,106 +339,71 @@ export default function Tour({
               </button>
               <button
                 onClick={handleStart}
-                className={`px-6 py-3 rounded-xl font-medium text-white shadow-md`}
+                className="px-6 py-3 rounded-xl font-medium text-white shadow-md"
                 style={{ backgroundColor: accentColor }}
               >
-                {welcomeScreen.startButtonText || buttonLabels.start || 'Start Tour 🔥'}
+                {welcomeScreen.startButtonText || buttonLabels.start || 'Start Tour'}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Step tooltip - remount on step change */}
-      {phase === 'step' && (
-        <div
-          key={`tooltip-${currentStep}`}
-          ref={tooltipRef}
-          className={`
-            fixed z-[9999] p-5 sm:p-6 rounded-xl shadow-xl border max-w-sm w-[90%]
-            pointer-events-auto
-            ${theme === 'dark' ? 'bg-zinc-900/95 text-white border-zinc-700' : 'bg-white/95 text-zinc-900 border-zinc-200'}
-            ${tooltipClassName}
-          `}
-          style={tooltipStyle}
-        >
-          <p className="mb-4 text-base leading-relaxed">{steps[currentStep]?.content}</p>
-
-          {showProgress && (
-            <div className="h-1 bg-zinc-700 rounded-full mb-5 overflow-hidden">
-              <div
-                className="h-full transition-all duration-300"
-                style={{ width: `${((currentStep + 1) / steps.length) * 100}%`, backgroundColor: accentColor }}
-              />
-            </div>
-          )}
-
-          <div className="flex justify-between items-center">
-            <button onClick={handleSkip} className="text-sm opacity-80 hover:opacity-100">
-              {buttonLabels.skip || 'Skip'}
-            </button>
-            <div className="flex gap-3">
-              <button
-                onClick={handlePrevious}
-                disabled={currentStep === 0}
-                className={`px-4 py-2 rounded text-sm ${currentStep === 0 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-zinc-800'}`}
-              >
-                {buttonLabels.previous || 'Back'}
-              </button>
-              <button
-                onClick={handleNext}
-                className={`px-5 py-2 rounded text-sm font-medium text-white`}
-                style={{ backgroundColor: accentColor }}
-              >
-                {currentStep < steps.length - 1 ? buttonLabels.next || 'Next' : buttonLabels.finish || 'Finish'}
-              </button>
-            </div>
-          </div>
-
-          {/* Arrow */}
-          <div
-            className="absolute w-0 h-0 border-8 border-transparent"
-            style={{
-              ...getArrowStyle(steps[currentStep]?.position),
-              borderColor: theme === 'dark' ? '#27272a' : '#f4f4f5',
-            }}
-          />
-        </div>
+      {/* Active Tour Tooltip */}
+      {phase === 'active' && (
+        <Tooltip
+          key={currentStep}
+          step={steps[currentStep]}
+          stepIndex={currentStep}
+          totalSteps={steps.length}
+          theme={theme}
+          accentColor={accentColor}
+          showProgress={showProgress}
+          buttonLabels={buttonLabels}
+          onNext={handleNext}
+          onPrevious={handlePrevious}
+          onSkip={handleSkip}
+        />
       )}
     </>
   );
 }
 
-// Arrow helper
-function getArrowStyle(position?: string) {
+// ────────────────────────────────────────────────
+// Arrow Helper
+// ────────────────────────────────────────────────
+
+function getArrowStyle(position?: string, theme?: string) {
+  const color = theme === 'dark' ? '#27272a' : '#f4f4f5';
+
   switch (position) {
     case 'top':
       return {
         bottom: '-16px',
         left: '50%',
         transform: 'translateX(-50%)',
-        borderTopColor: 'currentColor',
+        borderTopColor: color,
       };
     case 'bottom':
       return {
         top: '-16px',
         left: '50%',
         transform: 'translateX(-50%)',
-        borderBottomColor: 'currentColor',
+        borderBottomColor: color,
       };
     case 'left':
       return {
         right: '-16px',
         top: '50%',
         transform: 'translateY(-50%)',
-        borderLeftColor: 'currentColor',
+        borderLeftColor: color,
       };
     case 'right':
       return {
         left: '-16px',
         top: '50%',
         transform: 'translateY(-50%)',
-        borderRightColor: 'currentColor',
+        borderRightColor: color,
       };
     default:
       return { display: 'none' };
