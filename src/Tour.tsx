@@ -73,6 +73,7 @@ export default function Tour({
   const [currentStep, setCurrentStep] = useState(0);
   const [visible, setVisible] = useState(isActive);
   const [mounted, setMounted] = useState(false);
+  const [tooltipStyle, setTooltipStyle] = useState<React.CSSProperties>({});
 
   const tooltipRef = useRef<HTMLDivElement>(null);
 
@@ -80,7 +81,7 @@ export default function Tour({
     setMounted(true);
   }, []);
 
-  // Cleanup on unmount / done
+  // Cleanup highlights on unmount or phase change
   useEffect(() => {
     return () => {
       document.querySelectorAll(`.${highlightClassName}`).forEach(el => {
@@ -89,7 +90,7 @@ export default function Tour({
     };
   }, [highlightClassName]);
 
-  // Highlight + scroll + position tooltip
+  // Handle step highlighting, scrolling, and tooltip positioning
   useEffect(() => {
     if (!visible || !mounted || phase !== 'step') return;
 
@@ -102,59 +103,62 @@ export default function Tour({
     // Highlight
     target.classList.add(highlightClassName);
 
-    // Scroll
+    // Scroll to target
     target.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
 
-    // Position tooltip
-    const rect = target.getBoundingClientRect();
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-    const tw = tooltipRef.current?.offsetWidth || 320;
-    const th = tooltipRef.current?.offsetHeight || 140;
+    // Wait for scroll to finish before positioning tooltip
+    const timer = setTimeout(() => {
+      const rect = target.getBoundingClientRect();
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const tw = tooltipRef.current?.offsetWidth || 320;
+      const th = tooltipRef.current?.offsetHeight || 140;
 
-    let top: number = 0;
-    let left: number = 0;
-    let transform = '';
+      let top: number = 0;
+      let left: number = 0;
+      let transform = '';
 
-    const pos = step.position || 'bottom';
-    const ox = step.offset?.x ?? 0;
-    const oy = step.offset?.y ?? 16;
+      const pos = step.position || 'bottom';
+      const ox = step.offset?.x ?? 0;
+      const oy = step.offset?.y ?? 16;
 
-    switch (pos) {
-      case 'top':
-        top = rect.top - th - oy;
-        left = rect.left + rect.width / 2 + ox;
-        transform = 'translateX(-50%)';
-        break;
-      case 'bottom':
-        top = rect.bottom + oy;
-        left = rect.left + rect.width / 2 + ox;
-        transform = 'translateX(-50%)';
-        break;
-      case 'left':
-        top = rect.top + rect.height / 2 + oy;
-        left = rect.left - tw - 24 + ox;
-        transform = 'translateY(-50%)';
-        break;
-      case 'right':
-        top = rect.top + rect.height / 2 + oy;
-        left = rect.right + 24 + ox;
-        transform = 'translateY(-50%)';
-        break;
-      case 'center':
-        top = rect.top + rect.height / 2;
-        left = rect.left + rect.width / 2;
-        transform = 'translate(-50%, -50%)';
-        break;
-    }
+      switch (pos) {
+        case 'top':
+          top = rect.top - th - oy;
+          left = rect.left + rect.width / 2 + ox;
+          transform = 'translateX(-50%)';
+          break;
+        case 'bottom':
+          top = rect.bottom + oy;
+          left = rect.left + rect.width / 2 + ox;
+          transform = 'translateX(-50%)';
+          break;
+        case 'left':
+          top = rect.top + rect.height / 2 + oy;
+          left = rect.left - tw - 24 + ox;
+          transform = 'translateY(-50%)';
+          break;
+        case 'right':
+          top = rect.top + rect.height / 2 + oy;
+          left = rect.right + 24 + ox;
+          transform = 'translateY(-50%)';
+          break;
+        case 'center':
+          top = rect.top + rect.height / 2;
+          left = rect.left + rect.width / 2;
+          transform = 'translate(-50%, -50%)';
+          break;
+      }
 
-    // Clamp
-    top = Math.max(16, Math.min(top, vh - th - 16));
-    left = Math.max(16, Math.min(left, vw - tw - 16));
+      // Clamp to viewport
+      top = Math.max(16, Math.min(top, vh - th - 16));
+      left = Math.max(16, Math.min(left, vw - tw - 16));
 
-    setTooltipStyle({ top, left, transform });
+      setTooltipStyle({ top, left, transform });
+    }, 300); // small delay for scroll animation to settle
 
     return () => {
+      clearTimeout(timer);
       target.classList.remove(highlightClassName);
     };
   }, [currentStep, visible, mounted, phase, steps, highlightClassName]);
@@ -167,11 +171,11 @@ export default function Tour({
     onStepChange?.(0);
   };
 
-  const next = () => {
+  const handleNext = () => {
     if (currentStep < steps.length - 1) {
-      const nextIndex = currentStep + 1;
-      setCurrentStep(nextIndex);
-      onStepChange?.(nextIndex);
+      const next = currentStep + 1;
+      setCurrentStep(next);
+      onStepChange?.(next);
     } else {
       setVisible(false);
       setPhase('done');
@@ -179,15 +183,15 @@ export default function Tour({
     }
   };
 
-  const prev = () => {
+  const handlePrevious = () => {
     if (currentStep > 0) {
-      const prevIndex = currentStep - 1;
-      setCurrentStep(prevIndex);
-      onStepChange?.(prevIndex);
+      const prev = currentStep - 1;
+      setCurrentStep(prev);
+      onStepChange?.(prev);
     }
   };
 
-  const skip = () => {
+  const handleSkip = () => {
     setVisible(false);
     setPhase('done');
     onSkip?.();
@@ -198,16 +202,11 @@ export default function Tour({
   return (
     <>
       {/* Persistent backdrop */}
-      <div className="fixed inset-0 bg-black/60 z-[9998]" onClick={skip} aria-hidden="true" />
+      <div className={`fixed inset-0 bg-black/60 z-[9998] ${overlayClassName}`} onClick={handleSkip} aria-hidden="true" />
 
-      {/* Phase: Welcome */}
+      {/* Welcome Phase */}
       {phase === 'welcome' && welcomeScreen.enabled && (
-        <div
-          className={`
-            fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none
-            ${overlayClassName}
-          `}
-        >
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none">
           <div
             className={`
               pointer-events-auto p-6 sm:p-8 rounded-2xl shadow-2xl border max-w-md w-[90%]
@@ -216,7 +215,7 @@ export default function Tour({
           >
             <div className="flex items-start justify-between mb-5">
               <h2 className="text-2xl font-bold">{welcomeScreen.title || 'Welcome'}</h2>
-              <button onClick={skip} aria-label="Skip tour" className="p-2 hover:opacity-80 text-2xl">
+              <button onClick={handleSkip} aria-label="Skip tour" className="p-2 hover:opacity-80 text-2xl leading-none">
                 ×
               </button>
             </div>
@@ -224,7 +223,7 @@ export default function Tour({
               {welcomeScreen.message || 'Let me guide you through the key parts.'}
             </p>
             <div className="flex justify-end gap-4">
-              <button onClick={skip} className="text-sm opacity-80 hover:opacity-100">
+              <button onClick={handleSkip} className="text-sm opacity-80 hover:opacity-100">
                 {buttonLabels.skip || 'Skip Tour'}
               </button>
               <button
@@ -239,7 +238,7 @@ export default function Tour({
         </div>
       )}
 
-      {/* Phase: Step tooltip */}
+      {/* Step Phase - Tooltip near target */}
       {phase === 'step' && (
         <div
           ref={tooltipRef}
@@ -263,19 +262,19 @@ export default function Tour({
           )}
 
           <div className="flex justify-between items-center">
-            <button onClick={skip} className="text-sm opacity-80 hover:opacity-100">
+            <button onClick={handleSkip} className="text-sm opacity-80 hover:opacity-100">
               {buttonLabels.skip || 'Skip'}
             </button>
             <div className="flex gap-3">
               <button
-                onClick={prev}
+                onClick={handlePrevious}
                 disabled={currentStep === 0}
                 className={`px-4 py-2 rounded text-sm ${currentStep === 0 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-zinc-800'}`}
               >
                 {buttonLabels.previous || 'Back'}
               </button>
               <button
-                onClick={next}
+                onClick={handleNext}
                 className={`px-5 py-2 rounded text-sm font-medium text-white`}
                 style={{ backgroundColor: accentColor }}
               >
@@ -284,7 +283,7 @@ export default function Tour({
             </div>
           </div>
 
-          {/* Arrow */}
+          {/* Arrow pointing to target */}
           <div
             className="absolute w-0 h-0 border-8 border-transparent"
             style={{
@@ -298,7 +297,7 @@ export default function Tour({
   );
 }
 
-// Arrow helper
+// Arrow position helper
 function getArrowStyle(position?: string) {
   switch (position) {
     case 'top':
