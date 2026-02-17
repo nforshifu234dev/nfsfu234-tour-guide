@@ -3,9 +3,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 
-// ────────────────────────────────────────────────
-// Types
-// ────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════════════════════════════
+// TYPES
+// ════════════════════════════════════════════════════════════════════════════════
 
 export interface TourStep {
   target: string;
@@ -16,69 +16,211 @@ export interface TourStep {
   device?: 'desktop' | 'mobile' | 'both';
 }
 
+export interface WelcomeScreenConfig {
+  enabled: boolean;
+  title?: string;
+  message?: string;
+  startButtonText?: string;
+}
+
+export interface ButtonLabels {
+  next?: string;
+  previous?: string;
+  skip?: string;
+  finish?: string;
+  start?: string;
+}
+
+export interface ThemeConfig {
+  backdrop?: string;
+  tooltipBg?: string;
+  tooltipText?: string;
+  tooltipBorder?: string;
+  buttonBg?: string;
+  buttonText?: string;
+  progressBar?: string;
+  highlightRing?: string;
+}
+
 export interface TourProps {
   tourId?: string;
   steps: TourStep[];
   isActive?: boolean;
-  theme?: 'light' | 'dark';
+  theme?: 'light' | 'dark' | 'custom';
+  customTheme?: ThemeConfig;
   accentColor?: string;
   onComplete?: () => void;
   onSkip?: () => void;
   onStart?: () => void;
   onStepChange?: (index: number) => void;
-  welcomeScreen?: {
-    enabled: boolean;
-    title?: string;
-    message?: string;
-    startButtonText?: string;
-  };
-  buttonLabels?: {
-    next?: string;
-    previous?: string;
-    skip?: string;
-    finish?: string;
-    start?: string;
-  };
+  welcomeScreen?: WelcomeScreenConfig;
+  buttonLabels?: ButtonLabels;
   showProgress?: boolean;
+  className?: string;
+  overlayClassName?: string;
+  tooltipClassName?: string;
   highlightClassName?: string;
 }
 
-// ────────────────────────────────────────────────
-// Tooltip Component (renders relative to target)
-// ────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════════════════════════════
+// THEME PRESETS
+// ════════════════════════════════════════════════════════════════════════════════
+
+const THEME_PRESETS: Record<'light' | 'dark', ThemeConfig> = {
+  dark: {
+    backdrop: 'rgba(0, 0, 0, 0.75)',
+    tooltipBg: '#18181b',
+    tooltipText: '#ffffff',
+    tooltipBorder: '#3f3f46',
+    buttonBg: '#27272a',
+    buttonText: '#ffffff',
+    progressBar: '#3f3f46',
+    highlightRing: 'rgba(16, 185, 129, 0.5)',
+  },
+  light: {
+    backdrop: 'rgba(0, 0, 0, 0.5)',
+    tooltipBg: '#ffffff',
+    tooltipText: '#18181b',
+    tooltipBorder: '#e4e4e7',
+    buttonBg: '#f4f4f5',
+    buttonText: '#18181b',
+    progressBar: '#e4e4e7',
+    highlightRing: 'rgba(59, 130, 246, 0.5)',
+  },
+};
+
+const DEFAULT_BUTTON_LABELS: Required<ButtonLabels> = {
+  next: 'Next',
+  previous: 'Back',
+  skip: 'Skip',
+  finish: 'Finish',
+  start: 'Start Tour',
+};
+
+const DEFAULT_WELCOME_SCREEN: Required<WelcomeScreenConfig> = {
+  enabled: false,
+  title: 'Welcome',
+  message: 'Let me guide you through the key features.',
+  startButtonText: 'Start Tour',
+};
+
+// ════════════════════════════════════════════════════════════════════════════════
+// UTILITIES
+// ════════════════════════════════════════════════════════════════════════════════
+
+function isMobile(): boolean {
+  return typeof window !== 'undefined' && window.innerWidth < 768;
+}
+
+function shouldShowStep(step: TourStep): boolean {
+  if (!step.device || step.device === 'both') return true;
+  return isMobile() ? step.device === 'mobile' : step.device === 'desktop';
+}
+
+function getArrowStyle(position?: string, color?: string) {
+  const borderColor = color || '#18181b';
+  
+  switch (position) {
+    case 'top':
+      return {
+        content: '',
+        position: 'absolute' as const,
+        bottom: '-8px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        width: 0,
+        height: 0,
+        borderLeft: '8px solid transparent',
+        borderRight: '8px solid transparent',
+        borderTop: `8px solid ${borderColor}`,
+      };
+    case 'bottom':
+      return {
+        content: '',
+        position: 'absolute' as const,
+        top: '-8px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        width: 0,
+        height: 0,
+        borderLeft: '8px solid transparent',
+        borderRight: '8px solid transparent',
+        borderBottom: `8px solid ${borderColor}`,
+      };
+    case 'left':
+      return {
+        content: '',
+        position: 'absolute' as const,
+        right: '-8px',
+        top: '50%',
+        transform: 'translateY(-50%)',
+        width: 0,
+        height: 0,
+        borderTop: '8px solid transparent',
+        borderBottom: '8px solid transparent',
+        borderLeft: `8px solid ${borderColor}`,
+      };
+    case 'right':
+      return {
+        content: '',
+        position: 'absolute' as const,
+        left: '-8px',
+        top: '50%',
+        transform: 'translateY(-50%)',
+        width: 0,
+        height: 0,
+        borderTop: '8px solid transparent',
+        borderBottom: '8px solid transparent',
+        borderRight: `8px solid ${borderColor}`,
+      };
+    default:
+      return { display: 'none' };
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════════════════
+// TOOLTIP COMPONENT
+// ════════════════════════════════════════════════════════════════════════════════
+
+interface TooltipProps {
+  step: TourStep;
+  stepIndex: number;
+  totalSteps: number;
+  themeConfig: ThemeConfig;
+  accentColor: string;
+  showProgress: boolean;
+  buttonLabels: Required<ButtonLabels>;
+  tooltipClassName?: string;
+  onNext: () => void;
+  onPrevious: () => void;
+  onSkip: () => void;
+}
 
 function Tooltip({
   step,
   stepIndex,
   totalSteps,
-  theme,
+  themeConfig,
   accentColor,
   showProgress,
   buttonLabels,
+  tooltipClassName,
   onNext,
   onPrevious,
   onSkip,
-}: {
-  step: TourStep;
-  stepIndex: number;
-  totalSteps: number;
-  theme: 'light' | 'dark';
-  accentColor: string;
-  showProgress: boolean;
-  buttonLabels: any;
-  onNext: () => void;
-  onPrevious: () => void;
-  onSkip: () => void;
-}) {
+}: TooltipProps) {
   const [targetElement, setTargetElement] = useState<HTMLElement | null>(null);
   const [tooltipStyle, setTooltipStyle] = useState<React.CSSProperties>({});
   const tooltipRef = useRef<HTMLDivElement>(null);
+
+  // Get content based on device
+  const content = isMobile() && step.contentMobile ? step.contentMobile : step.content;
 
   // Find and observe target element
   useEffect(() => {
     const target = document.querySelector(step.target) as HTMLElement;
     if (!target) {
-      console.warn(`Tour: Target "${step.target}" not found`);
+      console.warn(`[NFSFU234TourGuide] Target "${step.target}" not found in DOM`);
       return;
     }
 
@@ -87,29 +229,28 @@ function Tooltip({
     // Scroll target into view
     target.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-    // Add highlight class
+    // Add highlight
     target.style.position = 'relative';
     target.style.zIndex = '9999';
-    target.classList.add('tour-active-target');
+    target.classList.add('nfsfu234-tour-active-target');
 
-    // Intersection observer to keep tooltip visible
+    // Watch if target goes out of view
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (!entry.isIntersecting) {
-            // Target is out of view, scroll it back
             target.scrollIntoView({ behavior: 'smooth', block: 'center' });
           }
         });
       },
-      { threshold: 0.5 }
+      { threshold: 0.3 }
     );
 
     observer.observe(target);
 
     return () => {
       observer.disconnect();
-      target.classList.remove('tour-active-target');
+      target.classList.remove('nfsfu234-tour-active-target');
       target.style.zIndex = '';
     };
   }, [step.target]);
@@ -183,81 +324,141 @@ function Tooltip({
   return createPortal(
     <div
       ref={tooltipRef}
-      className={`
-        p-5 sm:p-6 rounded-xl shadow-2xl border max-w-sm w-[90%] sm:w-auto
-        ${theme === 'dark' ? 'bg-zinc-900/98 text-white border-zinc-700' : 'bg-white/98 text-zinc-900 border-zinc-200'}
-      `}
-      style={tooltipStyle}
+      className={tooltipClassName}
+      style={{
+        ...tooltipStyle,
+        backgroundColor: themeConfig.tooltipBg,
+        color: themeConfig.tooltipText,
+        border: `1px solid ${themeConfig.tooltipBorder}`,
+        borderRadius: '12px',
+        padding: '20px 24px',
+        maxWidth: '400px',
+        width: isMobile() ? '90%' : 'auto',
+        boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
+      }}
     >
-      <p className="mb-4 text-base leading-relaxed">{step.content}</p>
+      {/* Content */}
+      <p style={{ marginBottom: '16px', fontSize: '15px', lineHeight: '1.6' }}>
+        {content}
+      </p>
 
+      {/* Progress Bar */}
       {showProgress && (
-        <div className="h-1 bg-zinc-700 rounded-full mb-5 overflow-hidden">
+        <div
+          style={{
+            height: '4px',
+            backgroundColor: themeConfig.progressBar,
+            borderRadius: '4px',
+            overflow: 'hidden',
+            marginBottom: '20px',
+          }}
+        >
           <div
-            className="h-full transition-all duration-300"
             style={{
+              height: '100%',
               width: `${((stepIndex + 1) / totalSteps) * 100}%`,
               backgroundColor: accentColor,
+              transition: 'width 0.3s ease',
             }}
           />
         </div>
       )}
 
-      <div className="flex justify-between items-center">
-        <button onClick={onSkip} className="text-sm opacity-80 hover:opacity-100">
-          {buttonLabels.skip || 'Skip'}
+      {/* Buttons */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <button
+          onClick={onSkip}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: themeConfig.tooltipText,
+            opacity: 0.7,
+            cursor: 'pointer',
+            fontSize: '14px',
+            padding: '8px 0',
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
+          onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.7')}
+        >
+          {buttonLabels.skip}
         </button>
-        <div className="flex gap-3">
+
+        <div style={{ display: 'flex', gap: '12px' }}>
           <button
             onClick={onPrevious}
             disabled={stepIndex === 0}
-            className={`px-4 py-2 rounded text-sm ${
-              stepIndex === 0 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-zinc-800'
-            }`}
+            style={{
+              padding: '8px 16px',
+              borderRadius: '8px',
+              border: 'none',
+              backgroundColor: themeConfig.buttonBg,
+              color: themeConfig.buttonText,
+              cursor: stepIndex === 0 ? 'not-allowed' : 'pointer',
+              opacity: stepIndex === 0 ? 0.5 : 1,
+              fontSize: '14px',
+            }}
           >
-            {buttonLabels.previous || 'Back'}
+            {buttonLabels.previous}
           </button>
+
           <button
             onClick={onNext}
-            className="px-5 py-2 rounded text-sm font-medium text-white"
-            style={{ backgroundColor: accentColor }}
+            style={{
+              padding: '8px 20px',
+              borderRadius: '8px',
+              border: 'none',
+              backgroundColor: accentColor,
+              color: '#ffffff',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: '500',
+            }}
           >
-            {stepIndex < totalSteps - 1 ? buttonLabels.next || 'Next' : buttonLabels.finish || 'Finish'}
+            {stepIndex < totalSteps - 1 ? buttonLabels.next : buttonLabels.finish}
           </button>
         </div>
       </div>
 
-      {/* Arrow pointing to target */}
-      <div
-        className="absolute w-0 h-0 border-8 border-transparent"
-        style={getArrowStyle(step.position, theme)}
-      />
+      {/* Arrow */}
+      <div style={getArrowStyle(step.position, themeConfig.tooltipBg)} />
     </div>,
     document.body
   );
 }
 
-// ────────────────────────────────────────────────
-// Main Tour Component
-// ────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════════════════════════════
+// MAIN TOUR COMPONENT
+// ════════════════════════════════════════════════════════════════════════════════
 
 export default function Tour({
-  tourId = 'tour-guide',
+  tourId = 'nfsfu234-tour-guide',
   steps,
   isActive = true,
   theme = 'dark',
+  customTheme,
   accentColor = '#10b981',
   onComplete,
   onSkip,
   onStart,
   onStepChange,
-  welcomeScreen = { enabled: false },
-  buttonLabels = {},
+  welcomeScreen,
+  buttonLabels,
   showProgress = true,
-  highlightClassName = 'tour-highlight',
+  className = '',
+  overlayClassName = '',
+  tooltipClassName = '',
+  highlightClassName = 'nfsfu234-tour-highlight',
 }: TourProps) {
+  // Merge configs
+  const welcomeConfig = { ...DEFAULT_WELCOME_SCREEN, ...welcomeScreen };
+  const labels = { ...DEFAULT_BUTTON_LABELS, ...buttonLabels };
+  const themeConfig = customTheme || THEME_PRESETS[theme] || THEME_PRESETS.dark;
+
+  // Filter steps by device
+  const filteredSteps = steps.filter(shouldShowStep);
+
   const [phase, setPhase] = useState<'welcome' | 'active' | 'done'>(
-    welcomeScreen.enabled ? 'welcome' : steps.length > 0 ? 'active' : 'done'
+    welcomeConfig.enabled ? 'welcome' : filteredSteps.length > 0 ? 'active' : 'done'
   );
   const [currentStep, setCurrentStep] = useState(0);
   const [mounted, setMounted] = useState(false);
@@ -265,6 +466,25 @@ export default function Tour({
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Lock body scroll when welcome screen is active
+  useEffect(() => {
+    if (phase === 'welcome' && mounted) {
+      const scrollY = window.scrollY;
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = '100%';
+      document.body.style.overflow = 'hidden';
+
+      return () => {
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.width = '';
+        document.body.style.overflow = '';
+        window.scrollTo(0, scrollY);
+      };
+    }
+  }, [phase, mounted]);
 
   const handleStart = () => {
     setPhase('active');
@@ -274,7 +494,7 @@ export default function Tour({
   };
 
   const handleNext = () => {
-    if (currentStep < steps.length - 1) {
+    if (currentStep < filteredSteps.length - 1) {
       const next = currentStep + 1;
       setCurrentStep(next);
       onStepChange?.(next);
@@ -297,52 +517,117 @@ export default function Tour({
     onSkip?.();
   };
 
-  if (!mounted || !isActive || phase === 'done') return null;
+  if (!mounted || !isActive || phase === 'done' || filteredSteps.length === 0) {
+    return null;
+  }
 
   return (
     <>
-      {/* Backdrop overlay */}
+      {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/60 z-[9998]"
+        className={overlayClassName}
         onClick={handleSkip}
-        style={{ width: '100vw', height: '100vh' }}
+        style={{
+          position: 'fixed',
+          inset: 0,
+          width: '100vw',
+          height: '100vh',
+          backgroundColor: themeConfig.backdrop,
+          zIndex: 9998,
+        }}
+        aria-hidden="true"
       />
 
       {/* Welcome Screen */}
-      {phase === 'welcome' && welcomeScreen.enabled && (
+      {phase === 'welcome' && welcomeConfig.enabled && (
         <div
-          className="fixed inset-0 z-[9999] flex items-center justify-center"
-          style={{ width: '100vw', height: '100vh' }}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            width: '100vw',
+            height: '100vh',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+          }}
         >
           <div
-            className={`
-              p-6 sm:p-8 rounded-2xl shadow-2xl border max-w-md w-[90%]
-              ${theme === 'dark' ? 'bg-zinc-900/98 text-white border-zinc-700' : 'bg-white/98 text-zinc-900 border-zinc-200'}
-            `}
+            className={tooltipClassName}
+            style={{
+              backgroundColor: themeConfig.tooltipBg,
+              color: themeConfig.tooltipText,
+              border: `1px solid ${themeConfig.tooltipBorder}`,
+              borderRadius: '16px',
+              padding: isMobile() ? '24px' : '32px',
+              maxWidth: '500px',
+              width: '90%',
+              boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
+            }}
           >
-            <div className="flex items-start justify-between mb-5">
-              <h2 className="text-2xl font-bold">{welcomeScreen.title || 'Welcome'}</h2>
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
+              <h2 style={{ fontSize: '24px', fontWeight: 'bold', margin: 0 }}>
+                {welcomeConfig.title}
+              </h2>
               <button
                 onClick={handleSkip}
-                aria-label="Skip tour"
-                className="p-2 hover:opacity-80 text-2xl leading-none"
+                aria-label="Close"
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '28px',
+                  lineHeight: 1,
+                  cursor: 'pointer',
+                  color: themeConfig.tooltipText,
+                  opacity: 0.7,
+                  padding: '4px 8px',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
+                onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.7')}
               >
                 ×
               </button>
             </div>
-            <p className="mb-6 whitespace-pre-line text-base leading-relaxed">
-              {welcomeScreen.message || 'Let me guide you through the key features.'}
+
+            {/* Message */}
+            <p style={{ marginBottom: '24px', fontSize: '15px', lineHeight: '1.6', whiteSpace: 'pre-line' }}>
+              {welcomeConfig.message}
             </p>
-            <div className="flex justify-end gap-4">
-              <button onClick={handleSkip} className="text-sm opacity-80 hover:opacity-100">
-                {buttonLabels.skip || 'Skip Tour'}
+
+            {/* Buttons */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '16px' }}>
+              <button
+                onClick={handleSkip}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: themeConfig.tooltipText,
+                  opacity: 0.8,
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  padding: '12px 0',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
+                onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.8')}
+              >
+                {labels.skip}
               </button>
               <button
                 onClick={handleStart}
-                className="px-6 py-3 rounded-xl font-medium text-white shadow-md"
-                style={{ backgroundColor: accentColor }}
+                style={{
+                  padding: '12px 24px',
+                  borderRadius: '12px',
+                  border: 'none',
+                  backgroundColor: accentColor,
+                  color: '#ffffff',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                }}
               >
-                {welcomeScreen.startButtonText || buttonLabels.start || 'Start Tour'}
+                {welcomeConfig.startButtonText || labels.start}
               </button>
             </div>
           </div>
@@ -353,59 +638,46 @@ export default function Tour({
       {phase === 'active' && (
         <Tooltip
           key={currentStep}
-          step={steps[currentStep]}
+          step={filteredSteps[currentStep]}
           stepIndex={currentStep}
-          totalSteps={steps.length}
-          theme={theme}
+          totalSteps={filteredSteps.length}
+          themeConfig={themeConfig}
           accentColor={accentColor}
           showProgress={showProgress}
-          buttonLabels={buttonLabels}
+          buttonLabels={labels}
+          tooltipClassName={tooltipClassName}
           onNext={handleNext}
           onPrevious={handlePrevious}
           onSkip={handleSkip}
         />
       )}
+
+      {/* Inject highlight styles */}
+      <style>{`
+        .nfsfu234-tour-active-target {
+          position: relative !important;
+          z-index: 9999 !important;
+          box-shadow: 0 0 0 4px ${themeConfig.highlightRing || 'rgba(16, 185, 129, 0.5)'},
+                      0 0 0 8px ${themeConfig.highlightRing ? themeConfig.highlightRing.replace('0.5', '0.2') : 'rgba(16, 185, 129, 0.2)'},
+                      0 20px 40px rgba(0, 0, 0, 0.4) !important;
+          border-radius: 12px;
+          transition: box-shadow 0.3s ease;
+          animation: nfsfu234-tour-pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes nfsfu234-tour-pulse {
+          0%, 100% {
+            box-shadow: 0 0 0 4px ${themeConfig.highlightRing || 'rgba(16, 185, 129, 0.5)'},
+                        0 0 0 8px ${themeConfig.highlightRing ? themeConfig.highlightRing.replace('0.5', '0.2') : 'rgba(16, 185, 129, 0.2)'},
+                        0 20px 40px rgba(0, 0, 0, 0.4);
+          }
+          50% {
+            box-shadow: 0 0 0 4px ${themeConfig.highlightRing || 'rgba(16, 185, 129, 0.7)'},
+                        0 0 0 12px ${themeConfig.highlightRing ? themeConfig.highlightRing.replace('0.5', '0.3') : 'rgba(16, 185, 129, 0.3)'},
+                        0 20px 40px rgba(0, 0, 0, 0.4);
+          }
+        }
+      `}</style>
     </>
   );
-}
-
-// ────────────────────────────────────────────────
-// Arrow Helper
-// ────────────────────────────────────────────────
-
-function getArrowStyle(position?: string, theme?: string) {
-  const color = theme === 'dark' ? '#27272a' : '#f4f4f5';
-
-  switch (position) {
-    case 'top':
-      return {
-        bottom: '-16px',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        borderTopColor: color,
-      };
-    case 'bottom':
-      return {
-        top: '-16px',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        borderBottomColor: color,
-      };
-    case 'left':
-      return {
-        right: '-16px',
-        top: '50%',
-        transform: 'translateY(-50%)',
-        borderLeftColor: color,
-      };
-    case 'right':
-      return {
-        left: '-16px',
-        top: '50%',
-        transform: 'translateY(-50%)',
-        borderRightColor: color,
-      };
-    default:
-      return { display: 'none' };
-  }
 }
