@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.2.19](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v0.2.18...v0.2.19) (2026-02-17)
+
+
+### Features
+
+* Add tooltipStyle state for tooltip positioning ([#80](https://github.com/nforshifu234dev/nfsfu234-tour-guide/issues/80)) ([774fb1a](https://github.com/nforshifu234dev/nfsfu234-tour-guide/commit/774fb1a78651a8e173b1504b0305d98453d2105d))
+
+
+### Bug Fixes
+
+* Refactor tooltip handling and cleanup comments ([#79](https://github.com/nforshifu234dev/nfsfu234-tour-guide/issues/79)) ([21ad03e](https://github.com/nforshifu234dev/nfsfu234-tour-guide/commit/21ad03e8019d5abc712ef95674e9d41aabe36d2a))
+
 ### [0.2.18](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v0.2.17...v0.2.18) (2026-02-17)
 
 
