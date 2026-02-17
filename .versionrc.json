@@ -1,12 +1,13 @@
 {
+  "preset": "conventionalcommits",
   "types": [
     { "type": "feat", "section": "Features" },
     { "type": "fix", "section": "Bug Fixes" },
-    { "type": "chore", "section": "Chores" },
-    { "type": "docs", "section": "Documentation" },
-    { "type": "style", "section": "Style Changes" },
-    { "type": "refactor", "section": "Refactorings" },
+    { "type": "chore", "section": "Chores", "hidden": true },
+    { "type": "docs", "section": "Documentation", "hidden": true },
+    { "type": "style", "section": "Style Changes", "hidden": true },
+    { "type": "refactor", "section": "Refactorings", "hidden": true },
     { "type": "perf", "section": "Performance Improvements" },
-    { "type": "test", "section": "Tests" }
+    { "type": "test", "section": "Tests", "hidden": true }
   ]
 }

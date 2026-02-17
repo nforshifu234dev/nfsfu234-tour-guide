@@ -1,4 +1,7 @@
-import { FC } from 'react';
+// src/types/index.ts
+// ────────────────────────────────────────────────
+// Public API types for nfsfu234-tour-guide
+// ────────────────────────────────────────────────
 
 export interface TourStep {
   target: string;
@@ -49,11 +52,8 @@ export interface TourProps {
   welcomeScreen?: WelcomeScreenConfig;
   buttonLabels?: ButtonLabels;
   showProgress?: boolean;
-  className?: string;
+  highlightClassName?: string;
   overlayClassName?: string;
   tooltipClassName?: string;
-  highlightClassName?: string;
+  className?: string;
 }
-
-declare const Tour: FC<TourProps>;
-export default Tour;

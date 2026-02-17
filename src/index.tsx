@@ -1,4 +1,2 @@
-import Tour from './Tour';
-export type { TourProps, TourStep } from './Tour';
-export { Tour };
-export default Tour;
+export { default as Tour } from './Tour';
+export type * as Types from './types';

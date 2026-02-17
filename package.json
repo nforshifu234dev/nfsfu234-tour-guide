@@ -3,7 +3,8 @@
   "version": "0.3.0",
   "description": "A plug-and-play React component for creating customizable onboarding tours with tooltips, modals, and smooth user guidance. Built with Tailwind CSS and supports dark mode, Framer Motion animations, and full control over step logic.",
   "main": "dist/index.js",
-  "module": "dist/index.mjs",
+  "module": "ESNext",
+  "moduleResolution": "Bundler",
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
@@ -25,7 +26,7 @@
   ],
   "scripts": {
     "build:js": "tsup src/index.tsx --format esm,cjs --dts --clean",
-    "build:css": "cp src/tailwind.css dist/tailwind.css",
+    "build:css": "cpy \"src/tailwind.css\" dist/tailwind.css",
     "build": "npm run build:js && npm run build:css",
     "prepare": "npm run build",
     "prepublishOnly": "npm run build",
@@ -66,11 +67,11 @@
     "react": "^18.0.0 || ^19.0.0",
     "react-dom": "^18.0.0 || ^19.0.0"
   },
-  "dependencies": {},
   "devDependencies": {
     "@types/node": "^22.15.18",
     "@types/react": "^18.3.1",
     "@types/react-dom": "^18.3.1",
+    "cpy-cli": "^7.0.0",
     "standard-version": "^9.5.0",
     "tsup": "^8.5.0",
     "typescript": "^5.8.3"
