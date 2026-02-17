@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.2.14](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v0.2.13...v0.2.14) (2026-02-17)
+
+
+### Bug Fixes
+
+* Refactor package.json for author and dependencies ([#67](https://github.com/nforshifu234dev/nfsfu234-tour-guide/issues/67)) ([7b10a79](https://github.com/nforshifu234dev/nfsfu234-tour-guide/commit/7b10a7946469f754a1424dcff6460347a92bf096))
+* Refactor Tour component interfaces and logic ([#66](https://github.com/nforshifu234dev/nfsfu234-tour-guide/issues/66)) ([3d8934f](https://github.com/nforshifu234dev/nfsfu234-tour-guide/commit/3d8934f2f33e6b1dcf9f0456faec6b961bc8840e))
+* Update Dependabot assignees and reviewers to match current user ([#68](https://github.com/nforshifu234dev/nfsfu234-tour-guide/issues/68)) ([fbe947a](https://github.com/nforshifu234dev/nfsfu234-tour-guide/commit/fbe947afef19585d787206c4a5b3a0ef87a80385))
+
 ### [0.2.13](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v0.2.12...v0.2.13) (2026-02-16)
 
 ### [0.2.12](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v0.2.11...v0.2.12) (2025-06-01)
