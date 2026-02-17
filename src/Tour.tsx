@@ -2,46 +2,8 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import type { TourStep, TourProps } from './types';
 
-// ────────────────────────────────────────────────
-// Types
-// ────────────────────────────────────────────────
-
-export interface TourStep {
-  target: string;
-  content: string;
-  contentMobile?: string;
-  position?: 'top' | 'bottom' | 'left' | 'right';
-  offset?: { x?: number; y?: number };
-  device?: 'desktop' | 'mobile' | 'both';
-}
-
-export interface TourProps {
-  tourId?: string;
-  steps: TourStep[];
-  isActive?: boolean;
-  theme?: 'light' | 'dark';
-  accentColor?: string;
-  onComplete?: () => void;
-  onSkip?: () => void;
-  onStart?: () => void;
-  onStepChange?: (index: number) => void;
-  welcomeScreen?: {
-    enabled: boolean;
-    title?: string;
-    message?: string;
-    startButtonText?: string;
-  };
-  buttonLabels?: {
-    next?: string;
-    previous?: string;
-    skip?: string;
-    finish?: string;
-    start?: string;
-  };
-  showProgress?: boolean;
-  highlightClassName?: string;
-}
 
 // ────────────────────────────────────────────────
 // Tooltip Component (renders relative to target)
