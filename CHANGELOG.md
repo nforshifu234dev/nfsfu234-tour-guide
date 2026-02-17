@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.2.15](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v0.2.14...v0.2.15) (2026-02-17)
+
+
+### Features
+
+* Update README and enhance Tour component with new features and styling options ([#72](https://github.com/nforshifu234dev/nfsfu234-tour-guide/issues/72)) ([bee54f2](https://github.com/nforshifu234dev/nfsfu234-tour-guide/commit/bee54f21973bd699ce34a8b2494adae7e23e0d76))
+
+
+### Bug Fixes
+
+* Add missing type definitions for Node and React in devDependencies ([#73](https://github.com/nforshifu234dev/nfsfu234-tour-guide/issues/73)) ([76d8f8b](https://github.com/nforshifu234dev/nfsfu234-tour-guide/commit/76d8f8bdd04e787e3c5d544d7fb2d8d66d50b37b))
+* Add standard-version for version management ([#74](https://github.com/nforshifu234dev/nfsfu234-tour-guide/issues/74)) ([8260397](https://github.com/nforshifu234dev/nfsfu234-tour-guide/commit/8260397ff31431b774fbd6a4a1426f914214a504))
+
 ### [0.2.14](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v0.2.13...v0.2.14) (2026-02-17)
 
 
