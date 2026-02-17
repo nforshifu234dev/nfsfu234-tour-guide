@@ -1,8 +1,7 @@
-
 <h1 align="center">🎯 NFSFU234TourGuide</h1>
 
 <p align="center"><i>
-Plug-and-play React tour guide library — perfect for onboarding, walkthroughs, and product tours. Built for devs who ship fast and style clean.
+Plug-and-play React tour guide library — perfect for onboarding, walkthroughs, and product tours. Lightweight, extensible, and zero heavy dependencies by default.
 </i></p>
 
 <p align="center">
@@ -23,40 +22,28 @@ Plug-and-play React tour guide library — perfect for onboarding, walkthroughs,
 
 ## 🚀 Why Use NFSFU234TourGuide?
 
-✅ Interactive onboarding, modals & walkthroughs  
-🎨 Built with TailwindCSS for slick UI styling  
-🌓 Dark mode & mobile-first support  
-📦 Works with React 18+, Framer Motion, Lucide  
-⚡ Minimal config, full control — no bloat  
-💻 Clean API + callback hooks for tracking
+✅ Interactive onboarding, tooltips & walkthroughs  
+⚡ Extremely lightweight — no forced heavy dependencies  
+🖌️ Fully customizable styling (className props + optional Tailwind)  
+🌓 Dark/light theme support  
+📱 Mobile-aware steps & content  
+🔌 Clean API + lifecycle callbacks  
+🕹️ Keyboard navigation (arrows, Enter, Esc)  
+📦 Works with React 18+ / 19+
 
 ---
 
-## 📦 Prerequisites
-
-Install required **peer dependencies**:
-
-```bash
-npm install react@^18.3.1 react-dom@^18.3.1 tailwindcss@^4 framer-motion@^12.12.1 lucide-react@^0.511.0
-```
-
-Or with Yarn:
-
-```bash
-yarn add react@^18.3.1 react-dom@^18.3.1 tailwindcss@^4 framer-motion@^12.12.1 lucide-react@^0.511.0
-```
-
-> 📌 **Heads up**: Tailwind needs to be configured properly. Follow the [Tailwind Docs](https://tailwindcss.com/docs/installation) if you haven’t set it up yet.
-
----
-
-## 🔧 Installation
+## 📦 Installation
 
 ```bash
 npm install nfsfu234-tour-guide
 # or
 yarn add nfsfu234-tour-guide
+# or
+pnpm add nfsfu234-tour-guide
 ```
+
+Only **React** and **React DOM** are required.
 
 ---
 
@@ -65,140 +52,160 @@ yarn add nfsfu234-tour-guide
 ```tsx
 'use client';
 import Tour from 'nfsfu234-tour-guide';
+// Optional: for nice default styling
+import 'nfsfu234-tour-guide/tailwind.css';
 
 const steps = [
   {
-    target: '#step1',
-    content: 'Welcome to your dashboard!',
-    contentMobile: 'Explore your mobile dashboard.',
+    target: '#hero',
+    content: 'This is the hero section!',
     position: 'bottom',
     device: 'both',
   },
   {
-    target: '#step2',
-    content: 'Check out this feature.',
-    position: 'right',
-    offset: { x: 10, y: 5 },
-  },
-  {
-    target: '#submit-btn',
-    content: 'Click to finish!',
+    target: '#cta',
+    content: 'Click here to get started.',
     position: 'top',
   },
 ];
 
-export default function MyApp() {
+export default function MyComponent() {
   return (
     <div>
       <Tour
-        tourId="my-tour"
+        tourId="demo-tour"
         steps={steps}
         theme="dark"
         isActive={true}
+        accentColor="#10b981"
         welcomeScreen={{
           enabled: true,
-          content: {
-            title: 'Welcome to the App!',
-            message: 'Let us guide you through the key features.',
-            startButtonText: 'Get Started',
-            position: { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' },
-            mobilePosition: { top: '60%', left: '50%', transform: 'translate(-50%, -60%)' },
-          },
+          title: 'Welcome!',
+          message: 'Let me show you around.',
+          startButtonText: 'Start Tour',
         }}
         buttonLabels={{
-          next: 'Next Step',
+          next: 'Next',
           previous: 'Back',
-          skip: 'Skip Tour',
+          skip: 'Skip',
           finish: 'Done',
           start: 'Begin',
         }}
-        showProgressDots={true}
-        onStart={() => console.log('Tour started!')}
-        onStepChange={(step) => console.log(`Step ${step + 1} active`)}
-        onSkip={() => console.log('Tour skipped')}
-        onComplete={() => console.log('Tour completed!')}
+        showProgress={true}
+        onStart={() => console.log('Tour started')}
+        onStepChange={(step) => console.log(`Step ${step + 1}`)}
+        onSkip={() => console.log('Skipped')}
+        onComplete={() => console.log('Completed')}
       />
-      <div id="step1">Dashboard</div>
-      <div id="step2">Feature</div>
-      <button id="submit-btn">Submit</button>
+
+      <section id="hero">Hero Content</section>
+      <button id="cta">Call to Action</button>
     </div>
   );
 }
 ```
 
-> ⚠️ **Note**: Make sure your `target` elements exist in the DOM before triggering the tour.
+> **Note**: Make sure target elements (`#hero`, etc.) exist in the DOM when the tour starts.
 
 ---
 
 ## 🧠 Props Reference
 
-| Prop            | Type    | Description |
-|-----------------|---------|-------------|
-| `tourId`        | `string` | Unique identifier |
-| `steps`         | `TourStep[]` | List of step objects |
-| `theme`         | `'light'` \| `'dark'` | Sets theme |
-| `isActive`      | `boolean` | Show/hide tour |
-| `welcomeScreen` | `WelcomeScreenConfig` | Optional intro screen |
-| `buttonLabels`  | `object` | Customize nav buttons |
-| `onStart`       | `() => void` | Callback |
-| `onStepChange`  | `(stepIndex: number) => void` | Callback |
-| `onSkip`        | `() => void` | Callback |
-| `onComplete`    | `() => void` | Callback |
-| `showProgressDots` | `boolean` | Progress UI |
+| Prop                | Type                               | Description                                      | Default       |
+|---------------------|------------------------------------|--------------------------------------------------|---------------|
+| `tourId`            | `string`                           | Unique tour identifier                           | `'tour-guide'`|
+| `steps`             | `TourStep[]`                       | Array of tour steps (required)                   | —             |
+| `isActive`          | `boolean`                          | Show/hide the tour                               | `true`        |
+| `theme`             | `'light' \| 'dark'`                | Visual theme                                     | `'dark'`      |
+| `accentColor`       | `string`                           | Color for progress bar, buttons, highlights      | `'#10b981'`   |
+| `welcomeScreen`     | `{ enabled: boolean; ... }`        | Optional intro screen                            | `{ enabled: false }` |
+| `buttonLabels`      | `object`                           | Customize button text                            | English defaults |
+| `showProgress`      | `boolean`                          | Show progress bar                                | `true`        |
+| `className`         | `string`                           | Class for root overlay                           | —             |
+| `overlayClassName`  | `string`                           | Class for backdrop                               | —             |
+| `tooltipClassName`  | `string`                           | Class for tooltip/welcome box                    | —             |
+| `highlightClassName`| `string`                           | Class for highlighted elements                   | `'tour-highlight'` |
+| `onStart`           | `() => void`                       | Tour started                                     | —             |
+| `onStepChange`      | `(index: number) => void`          | Step changed                                     | —             |
+| `onSkip`            | `() => void`                       | User skipped                                     | —             |
+| `onComplete`        | `() => void`                       | Tour finished                                    | —             |
 
 ---
 
 ## 🧩 TourStep Interface
 
-| Property       | Type           | Description |
-|----------------|----------------|-------------|
-| `target`       | `string`       | CSS selector |
-| `content`      | `string`       | Tooltip message |
-| `position`     | `string`       | top, bottom, left, right |
-| `offset`       | `{ x, y }`     | Fine-tune placement |
-| `device`       | `'mobile'` \| `'desktop'` \| `'both'` | Show per device |
+| Property       | Type           | Description                                      |
+|----------------|----------------|--------------------------------------------------|
+| `target`       | `string`       | CSS selector (e.g. `'#hero'`, `'.sidebar'`)      |
+| `content`      | `string`       | Main tooltip text                                |
+| `contentMobile`| `string?`      | Mobile-specific text (optional)                  |
+| `position`     | `'top' \| 'bottom' \| 'left' \| 'right' \| 'center'` | Tooltip placement |
+| `offset`       | `{ x?: number; y?: number }` | Pixel offset from target |
+| `device`       | `'desktop' \| 'mobile' \| 'both'` | Show on specific devices |
 
 ---
 
-## ✨ Features Recap
+## ✨ Features
 
-- 🧠 Intelligent positioning + offset controls  
-- 🖥️ Desktop/mobile specific content  
-- 🧑‍🎨 Custom themes via Tailwind  
-- 🧭 Welcome screen with title/message  
-- 🔢 Step dots + progress bar  
-- 🔌 Lifecycle hooks for analytics  
-- 🕹️ Keyboard navigation (← → Enter Esc)
+- Zero heavy dependencies by default (React only)
+- Optional beautiful Tailwind styling (`import 'nfsfu234-tour-guide/tailwind.css'`)
+- Fully customizable via className props
+- Progress bar & dots
+- Click-outside-to-skip
+- Keyboard support (arrows, Enter, Esc)
+- Mobile-aware content & steps
+
+---
+
+## Styling
+
+**Default**: Minimal clean look using plain CSS variables.
+
+**With Tailwind** (recommended for best appearance):
+
+```tsx
+import 'nfsfu234-tour-guide/tailwind.css';
+```
+
+**Without Tailwind**:
+
+Use the className props to apply your own styles:
+
+```tsx
+<Tour
+  overlayClassName="bg-gray-900/80 backdrop-blur-xl"
+  tooltipClassName="bg-blue-950 text-white rounded-2xl p-6 shadow-2xl border border-blue-800/50"
+  highlightClassName="ring-4 ring-purple-500 ring-offset-4 rounded-xl"
+/>
+```
 
 ---
 
 ## 📚 Docs & Extras
 
-- 📘 Full Docs: _Coming Soon_  
-- 🧪 Live Demos: _Coming Soon_  
-- 📦 NPM: [npmjs.com/package/nfsfu234-tour-guide](https://www.npmjs.com/package/nfsfu234-tour-guide)
+- Full Docs: _Coming Soon_
+- Live Demos: _Coming Soon_
+- NPM: [npmjs.com/package/nfsfu234-tour-guide](https://www.npmjs.com/package/nfsfu234-tour-guide)
 
 ---
 
 ## 🤝 Contributing
 
 PRs, issues, and improvements are welcome!  
-Start with [CONTRIBUTING.md](./CONTRIBUTING.md) — or hit up the issues tab.
+Start with [CONTRIBUTING.md](./CONTRIBUTING.md) or open an issue.
 
 ---
 
 ## 📄 License
 
 MIT License — free for personal & commercial use.  
-Copyright © [NFORSHIFU234 Dev](https://github.com/NFORSHIFU234Dev)
+Copyright © NFORSHIFU234 Dev
 
 ---
 
 ## 🎯 Final Word
 
-**NFSFU234TourGuide** is your no-fluff, high-impact tool for building beautiful, interactive walkthroughs fast.  
-Stay focused on what matters: building great experiences.
+**NFSFU234TourGuide** is your no-fluff, high-impact tool for guiding users fast — without bloat or forced dependencies.
 
 > "Lead your users. Don’t just onboard — guide like a boss." 💼  
-> — Built by [NFORSHIFU234 Dev](https://github.com/NFORSHIFU234Dev)
-
+> — Built by [NFORSHIFU234 Dev](https://github.com/nforshifu234dev)
