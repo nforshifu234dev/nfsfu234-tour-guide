@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.3.0](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v0.2.21...v0.3.0) (2026-02-17)
+
+
+### ⚠ BREAKING CHANGES
+
+* removed framer-motion and lucide-react dependencies, changed theme system, removed tourDots prop
+
+### Features
+
+* Add TypeScript definitions for nfsfu234-tour-guide module ([#83](https://github.com/nforshifu234dev/nfsfu234-tour-guide/issues/83)) ([ace5968](https://github.com/nforshifu234dev/nfsfu234-tour-guide/commit/ace5968994ede1ee62ab183f4e553f6c257a0856))
+* complete rewrite with zero dependencies ([cf97b20](https://github.com/nforshifu234dev/nfsfu234-tour-guide/commit/cf97b201acadd820e61af7af741658160b3e5e99))
+
 ## [1.0.0](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v0.2.21...v1.0.0) (2026-02-17)
 
 ### ⚠ BREAKING CHANGES
