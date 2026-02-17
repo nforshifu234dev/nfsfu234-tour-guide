@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.0.1](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v1.0.0...v1.0.1) (2026-02-17)
+
+
+### Bug Fixes
+
+* update module paths in package.json for CommonJS and ES module compatibility ([#88](https://github.com/nforshifu234dev/nfsfu234-tour-guide/issues/88)) ([7fa1964](https://github.com/nforshifu234dev/nfsfu234-tour-guide/commit/7fa1964ad2e87a485c717a2c9c0b6f2d9b9b52ea))
+
 ## [1.0.0](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v0.3.1...v1.0.0) (2026-02-17)
 
 
