@@ -73,7 +73,12 @@ export default function Tour({
   const [currentStep, setCurrentStep] = useState(0);
   const [visible, setVisible] = useState(isActive);
   const [mounted, setMounted] = useState(false);
-  const [tooltipStyle, setTooltipStyle] = useState<React.CSSProperties>({}); // ← THIS WAS MISSING
+  const [tooltipStyle, setTooltipStyle] = useState<React.CSSProperties>({
+    top: '50%',
+    left: '50%',
+    transform: 'translate(-50%, -50%)',
+    opacity: 0,
+  });
 
   const tooltipRef = useRef<HTMLDivElement>(null);
 
@@ -90,7 +95,7 @@ export default function Tour({
     };
   }, [highlightClassName]);
 
-  // Step logic: highlight + scroll + position tooltip
+  // Position tooltip when step changes or window resizes
   useEffect(() => {
     if (!visible || !mounted || phase !== 'step') return;
 
@@ -98,26 +103,42 @@ export default function Tour({
     if (!step) return;
 
     const target = document.querySelector(step.target) as HTMLElement;
-    if (!target) return;
+    if (!target) {
+      console.warn(`Tour: Target "${step.target}" not found in DOM`);
+      return;
+    }
 
-    // Highlight
     target.classList.add(highlightClassName);
-
-    // Scroll
     target.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
 
-    // Wait for scroll to settle, then position tooltip
-    const timer = setTimeout(() => {
-      if (!tooltipRef.current) return;
+    const updatePosition = () => {
+      // Wait for tooltip ref to be ready
+      if (!tooltipRef.current) {
+        console.log('Tour: Tooltip ref not ready, retrying...');
+        requestAnimationFrame(updatePosition);
+        return;
+      }
 
       const rect = target.getBoundingClientRect();
       const vw = window.innerWidth;
       const vh = window.innerHeight;
-      const tw = tooltipRef.current.offsetWidth || 320;
-      const th = tooltipRef.current.offsetHeight || 140;
+      
+      // Get actual tooltip dimensions
+      const tw = tooltipRef.current.offsetWidth;
+      const th = tooltipRef.current.offsetHeight;
 
-      let top: number = 0;
-      let left: number = 0;
+      // If dimensions are still 0, retry on next frame
+      if (tw === 0 || th === 0) {
+        console.log('Tour: Tooltip dimensions not ready, retrying...');
+        requestAnimationFrame(updatePosition);
+        return;
+      }
+
+      console.log('Tour: Target rect:', rect);
+      console.log('Tour: Tooltip size:', { width: tw, height: th });
+
+      let top = 0;
+      let left = 0;
       let transform = '';
 
       const pos = step.position || 'bottom';
@@ -152,15 +173,40 @@ export default function Tour({
           break;
       }
 
-      // Clamp to viewport
+      // Keep tooltip in viewport
       top = Math.max(16, Math.min(top, vh - th - 16));
       left = Math.max(16, Math.min(left, vw - tw - 16));
 
-      setTooltipStyle({ top, left, transform });
-    }, 400); // delay for scroll to finish
+      console.log('Tour: Calculated position:', { top, left, transform });
+
+      setTooltipStyle({
+        top: `${top}px`,
+        left: `${left}px`,
+        transform,
+        opacity: 1,
+        transition: 'top 0.3s ease, left 0.3s ease, opacity 0.3s ease',
+      });
+    };
+
+    // Start with invisible tooltip
+    setTooltipStyle(prev => ({ ...prev, opacity: 0 }));
+
+    // Start positioning after scroll completes
+    const scrollTimer = setTimeout(() => {
+      // Use requestAnimationFrame to ensure DOM is ready
+      requestAnimationFrame(updatePosition);
+    }, 600);
+
+    // Handle window resize
+    const handleResize = () => {
+      requestAnimationFrame(updatePosition);
+    };
+    
+    window.addEventListener('resize', handleResize);
 
     return () => {
-      clearTimeout(timer);
+      clearTimeout(scrollTimer);
+      window.removeEventListener('resize', handleResize);
       target.classList.remove(highlightClassName);
     };
   }, [currentStep, visible, mounted, phase, steps, highlightClassName]);
@@ -240,10 +286,10 @@ export default function Tour({
         </div>
       )}
 
-      {/* Step tooltip */}
+      {/* Step tooltip - remount on step change */}
       {phase === 'step' && (
         <div
-          key={currentStep} // forces remount → feels like new component
+          key={`tooltip-${currentStep}`}
           ref={tooltipRef}
           className={`
             fixed z-[9999] p-5 sm:p-6 rounded-xl shadow-xl border max-w-sm w-[90%]
@@ -251,7 +297,7 @@ export default function Tour({
             ${theme === 'dark' ? 'bg-zinc-900/95 text-white border-zinc-700' : 'bg-white/95 text-zinc-900 border-zinc-200'}
             ${tooltipClassName}
           `}
-          style={tooltipStyle} // ← now used here
+          style={tooltipStyle}
         >
           <p className="mb-4 text-base leading-relaxed">{steps[currentStep]?.content}</p>
 
@@ -291,7 +337,7 @@ export default function Tour({
             className="absolute w-0 h-0 border-8 border-transparent"
             style={{
               ...getArrowStyle(steps[currentStep]?.position),
-              borderColor: theme === 'dark' ? '#ffffff' : '#111827',
+              borderColor: theme === 'dark' ? '#27272a' : '#f4f4f5',
             }}
           />
         </div>
@@ -304,13 +350,33 @@ export default function Tour({
 function getArrowStyle(position?: string) {
   switch (position) {
     case 'top':
-      return { bottom: '-8px', left: '50%', transform: 'translateX(-50%)' };
+      return {
+        bottom: '-16px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        borderTopColor: 'currentColor',
+      };
     case 'bottom':
-      return { top: '-8px', left: '50%', transform: 'translateX(-50%)' };
+      return {
+        top: '-16px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        borderBottomColor: 'currentColor',
+      };
     case 'left':
-      return { right: '-8px', top: '50%', transform: 'translateY(-50%)' };
+      return {
+        right: '-16px',
+        top: '50%',
+        transform: 'translateY(-50%)',
+        borderLeftColor: 'currentColor',
+      };
     case 'right':
-      return { left: '-8px', top: '50%', transform: 'translateY(-50%)' };
+      return {
+        left: '-16px',
+        top: '50%',
+        transform: 'translateY(-50%)',
+        borderRightColor: 'currentColor',
+      };
     default:
       return { display: 'none' };
   }
