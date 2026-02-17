@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.2.21](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v0.2.20...v0.2.21) (2026-02-17)
+
+
+### Bug Fixes
+
+* Refactor Tour component and tooltip handling ([#82](https://github.com/nforshifu234dev/nfsfu234-tour-guide/issues/82)) ([31cda9b](https://github.com/nforshifu234dev/nfsfu234-tour-guide/commit/31cda9bcbe73a1a3fc36236ccab03e0c8ed4e714))
+
 ### [0.2.20](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v0.2.19...v0.2.20) (2026-02-17)
 
 
