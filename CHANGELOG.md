@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.0.8](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v1.0.7...v1.0.8) (2026-02-19)
+
+
+### Bug Fixes
+
+* only lock body scroll during welcome phase, not during active tour steps ([#95](https://github.com/nforshifu234dev/nfsfu234-tour-guide/issues/95)) ([6304287](https://github.com/nforshifu234dev/nfsfu234-tour-guide/commit/6304287555632151abfdf7e93547ab62f48598a1))
+
 ### [1.0.7](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v1.0.6...v1.0.7) (2026-02-19)
 
 
