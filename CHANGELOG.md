@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.0.2](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v1.0.1...v1.0.2) (2026-02-19)
+
+
+### Bug Fixes
+
+* reset phase state when isActive toggles to prevent welcome+tooltip double render ([#89](https://github.com/nforshifu234dev/nfsfu234-tour-guide/issues/89)) ([483209f](https://github.com/nforshifu234dev/nfsfu234-tour-guide/commit/483209fc5e41c31a6d4e182333d68372c924f2d1))
+
 ### [1.0.1](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v1.0.0...v1.0.1) (2026-02-17)
 
 
