@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.0.6](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v1.0.5...v1.0.6) (2026-02-19)
+
+
+### Bug Fixes
+
+* **tour:** ensure complete cleanup of backdrop & body scroll lock on tour end ([#93](https://github.com/nforshifu234dev/nfsfu234-tour-guide/issues/93)) ([23b19eb](https://github.com/nforshifu234dev/nfsfu234-tour-guide/commit/23b19ebeafe07b1e149ca1e983fa591a732f9d8a))
+
 ### [1.0.5](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v1.0.4...v1.0.5) (2026-02-19)
 
 
