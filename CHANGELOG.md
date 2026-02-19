@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.0.3](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v1.0.2...v1.0.3) (2026-02-19)
+
+
+### Bug Fixes
+
+* memoize welcomeConfig and filteredSteps to stabilize isActive phase reset ([#90](https://github.com/nforshifu234dev/nfsfu234-tour-guide/issues/90)) ([cc5901e](https://github.com/nforshifu234dev/nfsfu234-tour-guide/commit/cc5901e36ac76e684813366521d33da41785fa47))
+
 ### [1.0.2](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v1.0.1...v1.0.2) (2026-02-19)
 
 
