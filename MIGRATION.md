@@ -7,6 +7,7 @@ This guide helps you upgrade from `nfsfu234-tour-guide` v0.2.x to v1.0.
 ## 🎯 TL;DR
 
 **v1.0 is a complete rewrite** with these major changes:
+
 - ✅ Zero dependencies (removed framer-motion, lucide-react)
 - ✅ New custom theme system
 - ✅ Improved tooltip positioning with Intersection Observer
@@ -40,6 +41,7 @@ pnpm add nfsfu234-tour-guide@latest
 | `animationDuration` | ❌ Removed | Fixed to 300ms |
 
 **Before (v0.x):**
+
 ```tsx
 <Tour
   tourDots={true}
@@ -50,6 +52,7 @@ pnpm add nfsfu234-tour-guide@latest
 ```
 
 **After (v1.0):**
+
 ```tsx
 <Tour
   showProgress={true}
@@ -65,6 +68,7 @@ pnpm add nfsfu234-tour-guide@latest
 **v1.0:** Proper theme system with presets
 
 **Before (v0.x):**
+
 ```tsx
 <Tour
   theme="dark"
@@ -75,6 +79,7 @@ pnpm add nfsfu234-tour-guide@latest
 ```
 
 **After (v1.0):**
+
 ```tsx
 <Tour
   theme="dark"
@@ -99,6 +104,7 @@ pnpm add nfsfu234-tour-guide@latest
 ### 3. Step Interface Changes
 
 **v0.x:**
+
 ```tsx
 interface TourStep {
   target: string;
@@ -109,6 +115,7 @@ interface TourStep {
 ```
 
 **v1.0:**
+
 ```tsx
 interface TourStep {
   target: string;
@@ -121,6 +128,7 @@ interface TourStep {
 ```
 
 **Migration:**
+
 - Remove `position: 'center'` — not supported (use `'bottom'` instead)
 - Add `device: 'both'` if you want steps on all devices (default behavior)
 - Add `contentMobile` if you want different text on mobile
@@ -130,12 +138,14 @@ interface TourStep {
 ### 4. Dependencies Removed
 
 **v0.x had:**
+
 - `framer-motion` (animations)
 - `lucide-react` (icons)
 
 **v1.0:** Zero external dependencies!
 
 **Action Required:** If you imported icons from `lucide-react` elsewhere:
+
 ```bash
 # Install lucide-react separately if you use it
 npm install lucide-react
@@ -146,11 +156,13 @@ npm install lucide-react
 ## ✅ Step-by-Step Migration
 
 ### Step 1: Update Package
+
 ```bash
 npm install nfsfu234-tour-guide@latest
 ```
 
 ### Step 2: Update Imports (No Change)
+
 ```tsx
 import Tour from 'nfsfu234-tour-guide';
 // Still works! ✅
@@ -159,6 +171,7 @@ import Tour from 'nfsfu234-tour-guide';
 ### Step 3: Update Props
 
 **Basic Usage (Minimal Changes):**
+
 ```diff
 <Tour
   steps={steps}
@@ -170,6 +183,7 @@ import Tour from 'nfsfu234-tour-guide';
 ```
 
 **Custom Styling:**
+
 ```diff
 <Tour
   steps={steps}
@@ -209,6 +223,7 @@ const steps = [
 ### Step 5: Test on Mobile
 
 v1.0 has better mobile support. Test:
+
 - Tooltip positioning on small screens
 - Device filtering (`device: 'mobile'`)
 - Mobile-specific content (`contentMobile`)
@@ -218,19 +233,24 @@ v1.0 has better mobile support. Test:
 ## 🎨 Theme Migration Examples
 
 ### Example 1: Dark Theme
+
 **v0.x:**
+
 ```tsx
 <Tour theme="dark" accentColor="#10b981" />
 ```
 
 **v1.0:**
+
 ```tsx
 <Tour theme="dark" accentColor="#10b981" />
 // Same! ✅
 ```
 
 ### Example 2: Custom Colors
+
 **v0.x:**
+
 ```tsx
 <Tour
   theme="dark"
@@ -240,6 +260,7 @@ v1.0 has better mobile support. Test:
 ```
 
 **v1.0:**
+
 ```tsx
 <Tour
   theme="custom"
@@ -262,25 +283,32 @@ v1.0 has better mobile support. Test:
 ## 🐛 Common Issues
 
 ### Issue 1: "tourDots is not a valid prop"
+
 **Solution:** Change to `showProgress`
+
 ```diff
 - <Tour tourDots={true} />
 + <Tour showProgress={true} />
 ```
 
 ### Issue 2: "position: center is deprecated"
+
 **Solution:** Use `bottom` or `top`
+
 ```diff
 - { target: '#hero', position: 'center' }
 + { target: '#hero', position: 'bottom' }
 ```
 
 ### Issue 3: Tooltip appears in wrong position
+
 **Cause:** v1.0 uses new positioning logic  
-**Solution:** 
+**Solution:**
+
 1. Ensure target elements exist in DOM before tour starts
 2. Try different `position` values
 3. Use `offset` to fine-tune:
+
 ```tsx
 {
   target: '#button',
@@ -290,7 +318,9 @@ v1.0 has better mobile support. Test:
 ```
 
 ### Issue 4: Custom styles not applying
+
 **Solution:** Use `customTheme` instead of className overrides
+
 ```tsx
 <Tour
   theme="custom"
@@ -338,6 +368,7 @@ v1.0 has better mobile support. Test:
 ## 💡 New Features to Explore
 
 ### 1. Device-Specific Steps
+
 ```tsx
 const steps = [
   { target: '#desktop-nav', device: 'desktop' }, // Desktop only
@@ -347,6 +378,7 @@ const steps = [
 ```
 
 ### 2. Mobile-Specific Content
+
 ```tsx
 {
   target: '#features',
@@ -356,6 +388,7 @@ const steps = [
 ```
 
 ### 3. Custom Themes
+
 ```tsx
 <Tour
   theme="custom"

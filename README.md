@@ -183,7 +183,7 @@ Use the className props to apply your own styles:
 
 ## 📚 Docs & Extras
 
-- Full Docs: _Coming Soon_
+- Full Docs: [tour-guide.nforshifu234dev.com](https://tour-guide.nforshifu234dev.com)
 - Live Demos: _Coming Soon_
 - NPM: [npmjs.com/package/nfsfu234-tour-guide](https://www.npmjs.com/package/nfsfu234-tour-guide)
 

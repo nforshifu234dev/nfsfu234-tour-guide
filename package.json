@@ -58,7 +58,7 @@
   "bugs": {
     "url": "https://github.com/nforshifu234dev/nfsfu234-tour-guide/issues"
   },
-  "homepage": "https://github.com/nforshifu234dev/nfsfu234-tour-guide#readme",
+  "homepage": "https://tour-guide.nforshifu234dev.com",
   "peerDependencies": {
     "react": "^18.0.0 || ^19.0.0",
     "react-dom": "^18.0.0 || ^19.0.0"
