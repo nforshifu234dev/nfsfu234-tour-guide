@@ -519,7 +519,6 @@ export default function Tour({
 
   // ── Scroll lock when tour is active (welcome or active phase) ───────────────
   // Cleanup ALWAYS runs when leaving active state (phase → 'done' or isActive → false)
-
   useEffect(() => {
     if (!mounted || !isActive || phase !== 'welcome') return;
 
