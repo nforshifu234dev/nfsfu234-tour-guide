@@ -4,7 +4,6 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import type { ThemeConfig, ButtonLabels, WelcomeScreenConfig, TourStep, TourProps } from './types';
 
-
 // ════════════════════════════════════════════════════════════════════════════════
 // THEME PRESETS
 // ════════════════════════════════════════════════════════════════════════════════
@@ -407,6 +406,9 @@ export default function Tour({
   const [currentStep, setCurrentStep] = useState(0);
   const [mounted, setMounted] = useState(false);
 
+  // Ref for welcome container so we can clean it up manually if needed
+  const welcomeRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -418,7 +420,7 @@ export default function Tour({
     }
   }, [isActive, welcomeConfig.enabled, filteredSteps.length]);
 
-  // Lock body scroll when welcome screen is active
+  // Lock body scroll when welcome screen is active + cleanup welcome DOM node
   useEffect(() => {
     if (phase === 'welcome' && mounted) {
       const scrollY = window.scrollY;
@@ -428,11 +430,25 @@ export default function Tour({
       document.body.style.overflow = 'hidden';
 
       return () => {
+        // Reset body scroll lock
         document.body.style.position = '';
         document.body.style.top = '';
         document.body.style.width = '';
         document.body.style.overflow = '';
         window.scrollTo(0, scrollY);
+
+        // Force-remove welcome screen container if React didn't unmount it
+        if (welcomeRef.current && welcomeRef.current.parentNode) {
+          welcomeRef.current.parentNode.removeChild(welcomeRef.current);
+        } else {
+          // Fallback: find by characteristic styles (very specific to your welcome div)
+          const staleWelcome = document.querySelector(
+            'div[style*="position: fixed"][style*="inset: 0px"][style*="z-index: 9999"]'
+          );
+          if (staleWelcome && staleWelcome.parentNode) {
+            staleWelcome.parentNode.removeChild(staleWelcome);
+          }
+        }
       };
     }
   }, [phase, mounted]);
@@ -474,7 +490,7 @@ export default function Tour({
 
   return (
     <>
-      {/* Backdrop */}
+      {/* Backdrop - remains during active tour */}
       <div
         className={overlayClassName}
         onClick={handleSkip}
@@ -492,6 +508,8 @@ export default function Tour({
       {/* Welcome Screen */}
       {phase === 'welcome' && welcomeConfig.enabled && (
         <div
+          ref={welcomeRef}
+          key="welcome-screen"  // Helps React unmount correctly
           style={{
             position: 'fixed',
             inset: 0,
