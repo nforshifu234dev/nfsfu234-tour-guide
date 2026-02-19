@@ -521,7 +521,7 @@ export default function Tour({
   // Cleanup ALWAYS runs when leaving active state (phase → 'done' or isActive → false)
 
   useEffect(() => {
-    if (!mounted || !isActive || phase === 'done') return;
+    if (!mounted || !isActive || phase === 'welcome') return;
 
     const scrollY = window.scrollY;
 
