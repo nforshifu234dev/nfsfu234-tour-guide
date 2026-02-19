@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.0.4](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v1.0.3...v1.0.4) (2026-02-19)
+
+
+### Bug Fixes
+
+* welcome screen still visible after tour starts ([#91](https://github.com/nforshifu234dev/nfsfu234-tour-guide/issues/91)) ([623bb9b](https://github.com/nforshifu234dev/nfsfu234-tour-guide/commit/623bb9bc2de7b9e7e23f2b2d47d52b2bb2d0d4a1))
+
 ### [1.0.3](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v1.0.2...v1.0.3) (2026-02-19)
 
 
