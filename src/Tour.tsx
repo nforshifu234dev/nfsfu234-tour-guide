@@ -410,6 +410,13 @@ export default function Tour({
     setMounted(true);
   }, []);
 
+  useEffect(() => {
+    if (isActive) {
+      setPhase(welcomeConfig.enabled ? 'welcome' : filteredSteps.length > 0 ? 'active' : 'done');
+      setCurrentStep(0);
+    }
+  }, [isActive]);
+
   // Lock body scroll when welcome screen is active
   useEffect(() => {
     if (phase === 'welcome' && mounted) {
