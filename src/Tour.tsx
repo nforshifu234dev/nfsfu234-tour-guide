@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import type { ThemeConfig, ButtonLabels, WelcomeScreenConfig, TourStep, TourProps } from './types';
 
@@ -393,12 +393,13 @@ export default function Tour({
   highlightClassName = 'nfsfu234-tour-highlight',
 }: TourProps) {
   // Merge configs
-  const welcomeConfig = { ...DEFAULT_WELCOME_SCREEN, ...welcomeScreen };
+  const welcomeConfig = useMemo(() => ({ ...DEFAULT_WELCOME_SCREEN, ...welcomeScreen }), [welcomeScreen]);
+
   const labels = { ...DEFAULT_BUTTON_LABELS, ...buttonLabels };
   const themeConfig = customTheme || (theme !== 'custom' ? THEME_PRESETS[theme] : THEME_PRESETS.dark);
 
   // Filter steps by device
-  const filteredSteps = steps.filter(shouldShowStep);
+  const filteredSteps = useMemo(() => steps.filter(shouldShowStep), [steps]);
 
   const [phase, setPhase] = useState<'welcome' | 'active' | 'done'>(
     welcomeConfig.enabled ? 'welcome' : filteredSteps.length > 0 ? 'active' : 'done'
@@ -415,7 +416,7 @@ export default function Tour({
       setPhase(welcomeConfig.enabled ? 'welcome' : filteredSteps.length > 0 ? 'active' : 'done');
       setCurrentStep(0);
     }
-  }, [isActive]);
+  }, [isActive, welcomeConfig.enabled, filteredSteps.length]);
 
   // Lock body scroll when welcome screen is active
   useEffect(() => {
