@@ -576,16 +576,12 @@ export default function Tour({
     onSkip?.();
   };
 
-  // ── Early return when inactive or finished ──────────────────────────────────
-
-  // if (!mounted || !isActive || phase === 'done' || filteredSteps.length === 0) {
-  //   return null;
-  // }
+  if (!mounted) return null;
 
   return (
     <>
-      {/* Backdrop: only present while tour is active */}
-      {isActive && phase !== 'done' && (
+      {/* Backdrop: hidden during welcome (welcome has its own overlay effect) */}
+      {isActive && phase === 'active' && (
         <div
           className={overlayClassName}
           onClick={handleSkip}
@@ -601,16 +597,15 @@ export default function Tour({
         />
       )}
 
-      {/* Welcome Screen */}
-      {phase === 'welcome' && welcomeConfig.enabled && (
+      {/* Welcome Screen — has its own full-screen backdrop built in */}
+      {isActive && phase === 'welcome' && welcomeConfig.enabled && (
         <div
-          ref={welcomeContainerRef}
-          key="welcome-screen"
           style={{
             position: 'fixed',
             inset: 0,
             width: '100vw',
             height: '100vh',
+            backgroundColor: themeConfig.backdrop, // backdrop IS here
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -638,14 +633,9 @@ export default function Tour({
                 onClick={handleSkip}
                 aria-label="Close welcome screen"
                 style={{
-                  background: 'none',
-                  border: 'none',
-                  fontSize: '28px',
-                  lineHeight: 1,
-                  cursor: 'pointer',
-                  color: themeConfig.tooltipText,
-                  opacity: 0.7,
-                  padding: '4px 8px',
+                  background: 'none', border: 'none', fontSize: '28px',
+                  lineHeight: 1, cursor: 'pointer',
+                  color: themeConfig.tooltipText, opacity: 0.7, padding: '4px 8px',
                 }}
                 onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
                 onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.7')}
@@ -662,31 +652,21 @@ export default function Tour({
               <button
                 onClick={handleSkip}
                 style={{
-                  background: 'none',
-                  border: 'none',
-                  color: themeConfig.tooltipText,
-                  opacity: 0.8,
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                  padding: '12px 0',
+                  background: 'none', border: 'none',
+                  color: themeConfig.tooltipText, opacity: 0.8,
+                  cursor: 'pointer', fontSize: '14px', padding: '12px 0',
                 }}
                 onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
                 onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.8')}
               >
                 {labels.skip}
               </button>
-
               <button
                 onClick={handleStart}
                 style={{
-                  padding: '12px 24px',
-                  borderRadius: '12px',
-                  border: 'none',
-                  backgroundColor: accentColor,
-                  color: '#ffffff',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                  fontWeight: '500',
+                  padding: '12px 24px', borderRadius: '12px', border: 'none',
+                  backgroundColor: accentColor, color: '#ffffff',
+                  cursor: 'pointer', fontSize: '14px', fontWeight: '500',
                   boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
                 }}
               >
@@ -698,7 +678,7 @@ export default function Tour({
       )}
 
       {/* Active tour tooltip */}
-      {phase === 'active' && (
+      {isActive && phase === 'active' && filteredSteps[currentStep] && (
         <Tooltip
           key={currentStep}
           step={filteredSteps[currentStep]}
@@ -715,32 +695,33 @@ export default function Tour({
         />
       )}
 
-      {/* Target highlight / pulse animation */}
-      <style>{`
-        .nfsfu234-tour-active-target {
-          position: relative !important;
-          z-index: 9999 !important;
-          box-shadow: 0 0 0 4px ${themeConfig.highlightRing || 'rgba(16, 185, 129, 0.5)'},
-                      0 0 0 8px ${themeConfig.highlightRing ? themeConfig.highlightRing.replace('0.5', '0.2') : 'rgba(16, 185, 129, 0.2)'},
-                      0 20px 40px rgba(0, 0, 0, 0.4) !important;
-          border-radius: 12px;
-          transition: box-shadow 0.3s ease;
-          animation: nfsfu234-tour-pulse 2s ease-in-out infinite;
-        }
-
-        @keyframes nfsfu234-tour-pulse {
-          0%, 100% {
+      {/* Styles — only injected while tour is active */}
+      {isActive && phase !== 'done' && (
+        <style>{`
+          .nfsfu234-tour-active-target {
+            position: relative !important;
+            z-index: 9999 !important;
             box-shadow: 0 0 0 4px ${themeConfig.highlightRing || 'rgba(16, 185, 129, 0.5)'},
                         0 0 0 8px ${themeConfig.highlightRing ? themeConfig.highlightRing.replace('0.5', '0.2') : 'rgba(16, 185, 129, 0.2)'},
-                        0 20px 40px rgba(0, 0, 0, 0.4);
+                        0 20px 40px rgba(0, 0, 0, 0.4) !important;
+            border-radius: 12px;
+            transition: box-shadow 0.3s ease;
+            animation: nfsfu234-tour-pulse 2s ease-in-out infinite;
           }
-          50% {
-            box-shadow: 0 0 0 4px ${themeConfig.highlightRing || 'rgba(16, 185, 129, 0.7)'},
-                        0 0 0 12px ${themeConfig.highlightRing ? themeConfig.highlightRing.replace('0.5', '0.3') : 'rgba(16, 185, 129, 0.3)'},
-                        0 20px 40px rgba(0, 0, 0, 0.4);
+          @keyframes nfsfu234-tour-pulse {
+            0%, 100% {
+              box-shadow: 0 0 0 4px ${themeConfig.highlightRing || 'rgba(16, 185, 129, 0.5)'},
+                          0 0 0 8px ${themeConfig.highlightRing ? themeConfig.highlightRing.replace('0.5', '0.2') : 'rgba(16, 185, 129, 0.2)'},
+                          0 20px 40px rgba(0, 0, 0, 0.4);
+            }
+            50% {
+              box-shadow: 0 0 0 4px ${themeConfig.highlightRing || 'rgba(16, 185, 129, 0.7)'},
+                          0 0 0 12px ${themeConfig.highlightRing ? themeConfig.highlightRing.replace('0.5', '0.3') : 'rgba(16, 185, 129, 0.3)'},
+                          0 20px 40px rgba(0, 0, 0, 0.4);
+            }
           }
-        }
-      `}</style>
+        `}</style>
+      )}
     </>
   );
 }
