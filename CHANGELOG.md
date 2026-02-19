@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.0.5](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v1.0.4...v1.0.5) (2026-02-19)
+
+
+### Bug Fixes
+
+* prevent stale welcome screen DOM nodes & add safe cleanup ([c8dbb88](https://github.com/nforshifu234dev/nfsfu234-tour-guide/commit/c8dbb883698b8ccc448d38a211b4ee0daadc342d))
+* **tour:** fix "node not a child of this node" error during welcome → active transition ([#92](https://github.com/nforshifu234dev/nfsfu234-tour-guide/issues/92)) ([f1c4d34](https://github.com/nforshifu234dev/nfsfu234-tour-guide/commit/f1c4d34a8397f336d96b55a177a2f2eddcfafdcb))
+
 ### [1.0.4](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v1.0.3...v1.0.4) (2026-02-19)
 
 
