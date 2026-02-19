@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.0.7](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v1.0.6...v1.0.7) (2026-02-19)
+
+
+### Bug Fixes
+
+* eliminate welcome+backdrop overlap by consolidating welcome phase into single full-screen div ([#94](https://github.com/nforshifu234dev/nfsfu234-tour-guide/issues/94)) ([8a0e83b](https://github.com/nforshifu234dev/nfsfu234-tour-guide/commit/8a0e83bed8f708af558b1e74fa7536fde7a5f24a))
+
 ### [1.0.6](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v1.0.5...v1.0.6) (2026-02-19)
 
 
