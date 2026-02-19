@@ -54,14 +54,15 @@ const DEFAULT_WELCOME_SCREEN: Required<WelcomeScreenConfig> = {
 };
 
 /**
- * Utility: Detects if current viewport is mobile-sized (< 768px)
+ * Detects if the current viewport width qualifies as mobile (< 768px).
  */
 function isMobile(): boolean {
   return typeof window !== 'undefined' && window.innerWidth < 768;
 }
 
 /**
- * Determines if a step should be visible based on its device targeting and current device
+ * Checks whether a given tour step should be displayed based on its device targeting
+ * and the currently detected device type.
  */
 function shouldShowStep(step: TourStep, currentDevice: 'mobile' | 'desktop'): boolean {
   if (!step.device || step.device === 'both') return true;
@@ -69,7 +70,7 @@ function shouldShowStep(step: TourStep, currentDevice: 'mobile' | 'desktop'): bo
 }
 
 /**
- * Generates CSS for the tooltip arrow based on final display position
+ * Returns the CSS object for a tooltip arrow pointing in the specified direction.
  */
 function getArrowStyle(position?: string, color?: string) {
   const borderColor = color || '#18181b';
@@ -151,9 +152,12 @@ interface TooltipProps {
 }
 
 /**
- * Renders a positioned tooltip for a single tour step.
- * Features: dynamic positioning with smart flipping, viewport clamping, target highlighting,
- * scroll-into-view behavior, and device-aware content selection.
+ * Displays a single tour step tooltip anchored to a DOM target.
+ * Handles:
+ * - Dynamic positioning with automatic side flipping when space is insufficient
+ * - Viewport edge clamping
+ * - Target highlighting and scroll-into-view behavior
+ * - Device-specific content selection
  */
 function Tooltip({
   step,
@@ -174,7 +178,7 @@ function Tooltip({
 
   const content = isMobile() && step.contentMobile ? step.contentMobile : step.content;
 
-  // Attach to target, highlight, scroll into view, observe visibility
+  // ── Target attachment, highlighting & visibility observer ───────────────────
   useEffect(() => {
     const target = document.querySelector(step.target) as HTMLElement | null;
     if (!target) {
@@ -207,7 +211,7 @@ function Tooltip({
     };
   }, [step.target]);
 
-  // Dynamic positioning with smart flipping + resize handling
+  // ── Adaptive positioning with smart flipping & resize handling ──────────────
   useEffect(() => {
     if (!targetElement || !tooltipRef.current) return;
 
@@ -219,7 +223,6 @@ function Tooltip({
 
       let position = step.position || 'bottom';
 
-      // Calculate available space
       const space = {
         top: targetRect.top,
         bottom: window.innerHeight - targetRect.bottom,
@@ -229,23 +232,17 @@ function Tooltip({
 
       const MIN_SPACE = 40;
 
-      // Smart flip if preferred side doesn't fit
-      if (position === 'top' && tooltipRect.height + MIN_SPACE > space.top) {
-        position = 'bottom';
-      } else if (position === 'bottom' && tooltipRect.height + MIN_SPACE > space.bottom) {
-        position = 'top';
-      } else if (position === 'left' && tooltipRect.width + MIN_SPACE > space.left) {
-        position = 'right';
-      } else if (position === 'right' && tooltipRect.width + MIN_SPACE > space.right) {
-        position = 'left';
-      }
+      // Flip if preferred side lacks space
+      if (position === 'top' && tooltipRect.height + MIN_SPACE > space.top) position = 'bottom';
+      else if (position === 'bottom' && tooltipRect.height + MIN_SPACE > space.bottom) position = 'top';
+      else if (position === 'left' && tooltipRect.width + MIN_SPACE > space.left) position = 'right';
+      else if (position === 'right' && tooltipRect.width + MIN_SPACE > space.right) position = 'left';
 
-      // Final fallback
+      // Final fallback to safer defaults
       if ((position === 'top' && space.top < MIN_SPACE) || (position === 'left' && space.left < MIN_SPACE)) {
         position = position === 'top' ? 'bottom' : 'right';
       }
 
-      // Calculate coordinates
       let top = 0;
       let left = 0;
 
@@ -271,7 +268,7 @@ function Tooltip({
           break;
       }
 
-      // Clamp to viewport
+      // Clamp to viewport edges
       const vw = window.innerWidth;
       const vh = window.innerHeight;
       top = Math.max(16, Math.min(top, vh - tooltipRect.height - 16));
@@ -285,13 +282,11 @@ function Tooltip({
       });
     };
 
-    // Debounced RAF update
     const debouncedUpdate = () => {
       cancelAnimationFrame(rafId);
       rafId = requestAnimationFrame(updatePosition);
     };
 
-    // Initial positioning
     debouncedUpdate();
 
     window.addEventListener('scroll', debouncedUpdate, true);
@@ -322,7 +317,9 @@ function Tooltip({
         boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
       }}
     >
-      <p style={{ marginBottom: '16px', fontSize: '15px', lineHeight: '1.6' }}>{content}</p>
+      <p style={{ marginBottom: '16px', fontSize: '15px', lineHeight: '1.6' }}>
+        {content}
+      </p>
 
       {showProgress && (
         <div
@@ -410,25 +407,21 @@ function Tooltip({
 // ────────────────────────────────────────────────────────────────────────────────
 
 /**
- * Interactive, lightweight product tour / onboarding component.
+ * Lightweight, zero-dependency React product tour / onboarding component.
  *
  * Features:
- * - Welcome screen with scroll lock
- * - Step-by-step tooltips with target highlighting
- * - Progress bar
- * - Device-aware steps (mobile/desktop/both)
- * - Smart tooltip positioning with auto-flipping
- * - Reactive to browser resize / orientation change
- * - Zero external dependencies beyond React
+ * - Optional welcome screen with scroll lock
+ * - Step-by-step tooltips with target highlighting & progress bar
+ * - Device-specific steps (mobile / desktop / both)
+ * - Smart adaptive tooltip positioning (auto-flips when space is limited)
+ * - Reactive to browser resize and orientation changes
+ * - Clean unmount: removes backdrop & unlocks body scroll when finished
  *
  * @example
  * <Tour
- *   steps={[
- *     { target: '#hero', content: 'Welcome!', device: 'both' },
- *     { target: '#menu', content: 'Navigation', device: 'mobile' },
- *   ]}
+ *   steps={[{ target: '#hero', content: 'Welcome!' }]}
  *   isActive={true}
- *   welcomeScreen={{ enabled: true, title: 'Hi there!' }}
+ *   welcomeScreen={{ enabled: true, title: 'Hello!' }}
  * />
  */
 export default function Tour({
@@ -450,22 +443,16 @@ export default function Tour({
   tooltipClassName = '',
   highlightClassName = 'nfsfu234-tour-highlight',
 }: TourProps) {
-  // ── Config merging ───────────────────────────────────────────────────────────
+  // ── Configuration ────────────────────────────────────────────────────────────
 
-  const welcomeConfig = useMemo(
-    () => ({ ...DEFAULT_WELCOME_SCREEN, ...welcomeScreen }),
-    [welcomeScreen]
-  );
-
+  const welcomeConfig = useMemo(() => ({ ...DEFAULT_WELCOME_SCREEN, ...welcomeScreen }), [welcomeScreen]);
   const labels = { ...DEFAULT_BUTTON_LABELS, ...buttonLabels };
-
   const themeConfig = customTheme || (theme !== 'custom' ? THEME_PRESETS[theme] : THEME_PRESETS.dark);
 
   // ── Reactive device detection ───────────────────────────────────────────────
 
-  const [currentDevice, setCurrentDevice] = useState<'mobile' | 'desktop'>(
-    isMobile() ? 'mobile' : 'desktop'
-  );
+   const [currentDevice, setCurrentDevice] = useState<'mobile' | 'desktop'>(isMobile() ? 'mobile' : 'desktop');
+
 
   useEffect(() => {
     const checkDevice = () => {
@@ -473,20 +460,19 @@ export default function Tour({
     };
 
     window.addEventListener('resize', checkDevice);
-    checkDevice(); // initial
+    checkDevice();
 
     return () => window.removeEventListener('resize', checkDevice);
   }, []);
 
-  // ── Filtered steps (reactive to device changes) ─────────────────────────────
+  // ── Filtered steps (updates when device changes) ─────────────────────────────
 
   const filteredSteps = useMemo(
-    () =>
-      steps.filter((step) => shouldShowStep(step, currentDevice)),
+    () => steps.filter((step) => shouldShowStep(step, currentDevice)),
     [steps, currentDevice]
   );
 
-  // ── State ────────────────────────────────────────────────────────────────────
+  // ── Phase & step state ───────────────────────────────────────────────────────
 
   const [phase, setPhase] = useState<'welcome' | 'active' | 'done'>(
     welcomeConfig.enabled ? 'welcome' : filteredSteps.length > 0 ? 'active' : 'done'
@@ -497,7 +483,7 @@ export default function Tour({
 
   const welcomeContainerRef = useRef<HTMLDivElement>(null);
 
-  // ── Mount & reset ────────────────────────────────────────────────────────────
+  // ── Lifecycle & reset ────────────────────────────────────────────────────────
 
   useEffect(() => {
     setMounted(true);
@@ -510,14 +496,13 @@ export default function Tour({
     }
   }, [isActive, welcomeConfig.enabled, filteredSteps.length]);
 
-  // ── Auto-skip invalid steps after device change ─────────────────────────────
+  // ── Auto-skip to next valid step if current becomes invalid after resize ─────
 
   useEffect(() => {
     if (phase !== 'active') return;
 
     const current = filteredSteps[currentStep];
     if (!current || !shouldShowStep(current, currentDevice)) {
-      // Find next valid step after current
       const nextValidIndex = filteredSteps.findIndex(
         (s, i) => i > currentStep && shouldShowStep(s, currentDevice)
       );
@@ -526,17 +511,17 @@ export default function Tour({
         setCurrentStep(nextValidIndex);
         onStepChange?.(nextValidIndex);
       } else {
-        // No more valid steps → end tour
         setPhase('done');
         onComplete?.();
       }
     }
   }, [currentDevice, filteredSteps, currentStep, phase, onStepChange, onComplete]);
 
-  // ── Welcome scroll lock + safe cleanup ──────────────────────────────────────
+  // ── Scroll lock when tour is active (welcome or active phase) ───────────────
+  // Cleanup ALWAYS runs when leaving active state (phase → 'done' or isActive → false)
 
   useEffect(() => {
-    if (phase !== 'welcome' || !mounted) return;
+    if (!mounted || !isActive || phase === 'done') return;
 
     const scrollY = window.scrollY;
 
@@ -546,38 +531,19 @@ export default function Tour({
     document.body.style.overflow = 'hidden';
 
     return () => {
+      // This cleanup executes reliably when:
+      // - phase changes to 'done'
+      // - isActive becomes false
+      // - component unmounts
       document.body.style.position = '';
       document.body.style.top = '';
       document.body.style.width = '';
       document.body.style.overflow = '';
       window.scrollTo({ top: scrollY, behavior: 'instant' });
-
-      // Safe removal of welcome container
-      if (welcomeContainerRef.current?.parentNode) {
-        try {
-          welcomeContainerRef.current.parentNode.removeChild(welcomeContainerRef.current);
-        } catch {
-          // already removed — safe
-        }
-        return;
-      }
-
-      // Fallback lookup
-      const stale = document.querySelector(
-        'div[style*="position: fixed"][style*="inset: 0px"][style*="z-index: 9999"]'
-      ) as HTMLElement | null;
-
-      if (stale?.parentNode) {
-        try {
-          stale.parentNode.removeChild(stale);
-        } catch {
-          // no-op
-        }
-      }
     };
-  }, [phase, mounted]);
+  }, [mounted, isActive, phase]);
 
-  // ── Navigation ───────────────────────────────────────────────────────────────
+  // ── Navigation handlers ──────────────────────────────────────────────────────
 
   const handleStart = () => {
     setPhase('active');
@@ -610,26 +576,30 @@ export default function Tour({
     onSkip?.();
   };
 
-  if (!mounted || !isActive || phase === 'done' || filteredSteps.length === 0) {
-    return null;
-  }
+  // ── Early return when inactive or finished ──────────────────────────────────
+
+  // if (!mounted || !isActive || phase === 'done' || filteredSteps.length === 0) {
+  //   return null;
+  // }
 
   return (
     <>
-      {/* Backdrop */}
-      <div
-        className={overlayClassName}
-        onClick={handleSkip}
-        style={{
-          position: 'fixed',
-          inset: 0,
-          width: '100vw',
-          height: '100vh',
-          backgroundColor: themeConfig.backdrop,
-          zIndex: 9998,
-        }}
-        aria-hidden="true"
-      />
+      {/* Backdrop: only present while tour is active */}
+      {isActive && phase !== 'done' && (
+        <div
+          className={overlayClassName}
+          onClick={handleSkip}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            width: '100vw',
+            height: '100vh',
+            backgroundColor: themeConfig.backdrop,
+            zIndex: 9998,
+          }}
+          aria-hidden="true"
+        />
+      )}
 
       {/* Welcome Screen */}
       {phase === 'welcome' && welcomeConfig.enabled && (
@@ -666,7 +636,7 @@ export default function Tour({
               </h2>
               <button
                 onClick={handleSkip}
-                aria-label="Close welcome"
+                aria-label="Close welcome screen"
                 style={{
                   background: 'none',
                   border: 'none',
@@ -727,7 +697,7 @@ export default function Tour({
         </div>
       )}
 
-      {/* Tooltip for active phase */}
+      {/* Active tour tooltip */}
       {phase === 'active' && (
         <Tooltip
           key={currentStep}
@@ -745,7 +715,7 @@ export default function Tour({
         />
       )}
 
-      {/* Highlight styles */}
+      {/* Target highlight / pulse animation */}
       <style>{`
         .nfsfu234-tour-active-target {
           position: relative !important;
@@ -774,4 +744,3 @@ export default function Tour({
     </>
   );
 }
-
