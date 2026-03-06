@@ -1,0 +1,44 @@
+Directory Structure for 'nfsfu234-tour-guide':
+
+├── .github
+│   ├── dependabot.yml
+│   ├── ISSUE_TEMPLATE
+│   │   ├── bug_report.yml
+│   │   ├── feature_request.yml
+│   ├── workflows
+│   │   ├── npm-publish.yml
+│   │   ├── release-on-merge.yml
+│   │   ├── semantic-pr.yml
+│   │   ├── stale-prs.yml
+│   │   ├── test-dependabot.yml
+│   │   ├── welcome-contributors.yml
+├── .gitignore
+├── .versionrc.json
+├── CHANGELOG.md
+├── CONTRIBUTING.md
+├── dist
+│   ├── index.cjs
+│   ├── index.cjs.map
+│   ├── index.d.cts
+│   ├── index.d.ts
+│   ├── index.mjs
+│   ├── index.mjs.map
+│   ├── tailwind.css
+├── file_structure.txt
+├── file_structure_metadata.txt
+├── LICENSE
+├── load_folders.py
+├── MIGRATION.md
+├── package-lock.json
+├── package.json
+├── postcss.config.cjs
+├── README.md
+├── src
+│   ├── index.tsx
+│   ├── tailwind.css
+│   ├── Tour.tsx
+│   ├── types
+│   │   ├── index.ts
+├── tailwind.config.ts
+├── tsconfig.json
+├── tsup.config.ts
