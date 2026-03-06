@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.0.10](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v1.0.9...v1.0.10) (2026-03-06)
+
+
+### Bug Fixes
+
+* resolve Next.js 15 ESM module resolution by outputting .mjs extension ([#100](https://github.com/nforshifu234dev/nfsfu234-tour-guide/issues/100)) ([54543fe](https://github.com/nforshifu234dev/nfsfu234-tour-guide/commit/54543fe099ebebd983119cc4d5344f3cd2a0ed32))
+
 ### [1.0.9](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v1.0.8...v1.0.9) (2026-02-19)
 
 
