@@ -23,12 +23,13 @@ Plug-and-play React tour guide library — perfect for onboarding, walkthroughs,
 ## 🚀 Why Use NFSFU234TourGuide?
 
 ✅ Interactive onboarding, tooltips & walkthroughs  
-⚡ Extremely lightweight — no forced heavy dependencies  
+⚡ Extremely lightweight — **~3-4 kB gzipped** (real app contribution, tree-shaken)  
 🖌️ Fully customizable styling (className props + optional Tailwind)  
-🌓 Dark/light theme support  
-📱 Mobile-aware steps & content  
+🌓 Dark / light / custom theme support  
+📱 Mobile-aware steps & device-specific content  
 🔌 Clean API + lifecycle callbacks  
 🕹️ Keyboard navigation (arrows, Enter, Esc)  
+🔷 Full TypeScript support  
 📦 Works with React 18+ / 19+
 
 ---
@@ -43,7 +44,7 @@ yarn add nfsfu234-tour-guide
 pnpm add nfsfu234-tour-guide
 ```
 
-Only **React** and **React DOM** are required.
+Only **React** and **React DOM** are required as peer dependencies. Zero other dependencies.
 
 ---
 
@@ -51,9 +52,8 @@ Only **React** and **React DOM** are required.
 
 ```tsx
 'use client';
-import Tour from 'nfsfu234-tour-guide';
-// Optional: for nice default styling
-import 'nfsfu234-tour-guide/tailwind.css';
+import { Tour } from 'nfsfu234-tour-guide';
+
 
 const steps = [
   {
@@ -65,7 +65,9 @@ const steps = [
   {
     target: '#cta',
     content: 'Click here to get started.',
+    contentMobile: 'Tap to get started.',
     position: 'top',
+    device: 'both',
   },
 ];
 
@@ -116,75 +118,130 @@ export default function MyComponent() {
 | `tourId`            | `string`                           | Unique tour identifier                           | `'tour-guide'`|
 | `steps`             | `TourStep[]`                       | Array of tour steps (required)                   | —             |
 | `isActive`          | `boolean`                          | Show/hide the tour                               | `true`        |
-| `theme`             | `'light' \| 'dark'`                | Visual theme                                     | `'dark'`      |
+| `theme`             | `'light' \| 'dark' \| 'custom'`   | Visual theme                                     | `'dark'`      |
+| `customTheme`       | `ThemeConfig`                      | Full color override (use with `theme="custom"`)  | —             |
 | `accentColor`       | `string`                           | Color for progress bar, buttons, highlights      | `'#10b981'`   |
-| `welcomeScreen`     | `{ enabled: boolean; ... }`        | Optional intro screen                            | `{ enabled: false }` |
-| `buttonLabels`      | `object`                           | Customize button text                            | English defaults |
+| `welcomeScreen`     | `WelcomeScreenConfig`              | Optional intro screen                            | `{ enabled: false }` |
+| `buttonLabels`      | `ButtonLabels`                     | Customize button text                            | English defaults |
 | `showProgress`      | `boolean`                          | Show progress bar                                | `true`        |
+| `showBranding`      | `boolean`                          | Show "Built with NFSFU234TourGuide" badge on the welcome screen | `true` |
 | `className`         | `string`                           | Class for root overlay                           | —             |
 | `overlayClassName`  | `string`                           | Class for backdrop                               | —             |
 | `tooltipClassName`  | `string`                           | Class for tooltip/welcome box                    | —             |
-| `highlightClassName`| `string`                           | Class for highlighted elements                   | `'tour-highlight'` |
-| `onStart`           | `() => void`                       | Tour started                                     | —             |
-| `onStepChange`      | `(index: number) => void`          | Step changed                                     | —             |
-| `onSkip`            | `() => void`                       | User skipped                                     | —             |
-| `onComplete`        | `() => void`                       | Tour finished                                    | —             |
+| `highlightClassName`| `string`                           | Class for highlighted elements                   | `'nfsfu234-tour-highlight'` |
+| `onStart`           | `() => void`                       | Fires when tour starts                           | —             |
+| `onStepChange`      | `(index: number) => void`          | Fires on every step change                       | —             |
+| `onSkip`            | `() => void`                       | Fires when user skips                            | —             |
+| `onComplete`        | `() => void`                       | Fires when tour finishes                         | —             |
 
 ---
 
 ## 🧩 TourStep Interface
 
-| Property       | Type           | Description                                      |
-|----------------|----------------|--------------------------------------------------|
-| `target`       | `string`       | CSS selector (e.g. `'#hero'`, `'.sidebar'`)      |
-| `content`      | `string`       | Main tooltip text                                |
-| `contentMobile`| `string?`      | Mobile-specific text (optional)                  |
-| `position`     | `'top' \| 'bottom' \| 'left' \| 'right' \| 'center'` | Tooltip placement |
-| `offset`       | `{ x?: number; y?: number }` | Pixel offset from target |
-| `device`       | `'desktop' \| 'mobile' \| 'both'` | Show on specific devices |
+| Property        | Type                                      | Description                                 |
+|-----------------|-------------------------------------------|---------------------------------------------|
+| `target`        | `string`                                  | CSS selector (e.g. `'#hero'`, `'.sidebar'`) |
+| `content`       | `string`                                  | Main tooltip text                           |
+| `contentMobile` | `string?`                                 | Mobile-specific text (optional)             |
+| `position`      | `'top' \| 'bottom' \| 'left' \| 'right'` | Tooltip placement (auto-flips if no space)  |
+| `offset`        | `{ x?: number; y?: number }`             | Pixel offset from target                    |
+| `device`        | `'desktop' \| 'mobile' \| 'both'`        | Show step on specific devices only          |
+
+---
+
+## 🎨 ThemeConfig Interface
+
+Pass this to `customTheme` when `theme="custom"`:
+
+| Property        | Type     | Description                           |
+|-----------------|----------|---------------------------------------|
+| `backdrop`      | `string` | Overlay background color              |
+| `tooltipBg`     | `string` | Tooltip background color              |
+| `tooltipText`   | `string` | Tooltip text color                    |
+| `tooltipBorder` | `string` | Tooltip border color                  |
+| `buttonBg`      | `string` | Secondary button background           |
+| `buttonText`    | `string` | Secondary button text color           |
+| `progressBar`   | `string` | Progress bar track color              |
+| `highlightRing` | `string` | Glow ring color around target element |
+
+```tsx
+<Tour
+  theme="custom"
+  customTheme={{
+    backdrop: 'rgba(0, 0, 0, 0.85)',
+    tooltipBg: '#0d0019',
+    tooltipText: '#faf5ff',
+    tooltipBorder: '#4c1d95',
+    buttonBg: '#1a0035',
+    buttonText: '#faf5ff',
+    progressBar: '#3b0764',
+    highlightRing: 'rgba(168, 85, 247, 0.5)',
+  }}
+  accentColor="#a855f7"
+/>
+```
 
 ---
 
 ## ✨ Features
 
-- Zero heavy dependencies by default (React only)
-- Optional beautiful Tailwind styling (`import 'nfsfu234-tour-guide/tailwind.css'`)
-- Fully customizable via className props
-- Progress bar & dots
+- **Zero dependencies** — React & ReactDOM only
+- **~3-4 kB gzipped** real app contribution (tree-shaken)
+- Smart tooltip positioning — auto-flips when space is limited, never clips off screen
+- Intersection Observer scroll tracking — tooltip stays anchored to its target
+- Progress bar
 - Click-outside-to-skip
 - Keyboard support (arrows, Enter, Esc)
-- Mobile-aware content & steps
+- Scroll lock on welcome screen
+- Mobile-aware steps & device-specific content
+- i18n ready — every label is a prop, no translation library needed
+- Full TypeScript support
 
 ---
 
-## Styling
+## ⚖️ How We Compare
 
-**Default**: Minimal clean look using plain CSS variables.
+| Feature                   | nfsfu234-tour-guide | React Joyride | Shepherd.js   | Intro.js          |
+|---------------------------|:-------------------:|:-------------:|:-------------:|:-----------------:|
+| Bundle size (gzipped)     | **~3-4 kB ✦**      | ~13 kB        | ~22 kB        | ~15 kB            |
+| Dependencies              | **0**               | 3             | 0             | 0                 |
+| React peer dep only       | ✅                  | ✅            | ❌            | ❌                |
+| TypeScript support        | ✅                  | ✅            | ⚠️ partial   | ❌                |
+| Mobile-aware steps        | ✅                  | ❌            | ❌            | ❌                |
+| Device-specific content   | ✅                  | ❌            | ❌            | ❌                |
+| Custom theme / colors     | ✅                  | ✅            | ✅            | ⚠️ CSS only      |
+| Welcome screen            | ✅                  | ❌            | ⚠️ custom    | ⚠️ custom        |
+| i18n / RTL support        | ✅                  | ⚠️ partial   | ⚠️ partial   | ✅                |
+| Lifecycle hooks           | ✅                  | ✅            | ✅            | ✅                |
+| License                   | MIT                 | MIT           | MIT           | GPL / Commercial  |
 
-**With Tailwind** (recommended for best appearance):
+> ✦ Real app contribution (tree-shaken). Sizes are approximate and may vary by version.
 
-```tsx
-import 'nfsfu234-tour-guide/tailwind.css';
-```
+---
 
-**Without Tailwind**:
+## 🏷️ Branding Badge
 
-Use the className props to apply your own styles:
+By default, a small **"Built with NFSFU234TourGuide"** badge appears at the bottom of the welcome screen. It's subtle, low-opacity, and links to the docs — never shown on individual step tooltips.
+
+To opt out, pass `showBranding={false}`:
 
 ```tsx
 <Tour
-  overlayClassName="bg-gray-900/80 backdrop-blur-xl"
-  tooltipClassName="bg-blue-950 text-white rounded-2xl p-6 shadow-2xl border border-blue-800/50"
-  highlightClassName="ring-4 ring-purple-500 ring-offset-4 rounded-xl"
+  steps={steps}
+  showBranding={false}
 />
 ```
+
+If you do leave it on, thank you — it genuinely helps the project grow. 🙏
+
 
 ---
 
 ## 📚 Docs & Extras
 
 - Full Docs: [tour-guide.nforshifu234dev.com](https://tour-guide.nforshifu234dev.com)
-- Live Demos: _Coming Soon_
+- API Reference: [tour-guide.nforshifu234dev.com/api-reference](https://tour-guide.nforshifu234dev.com/api-reference)
+- Examples: [tour-guide.nforshifu234dev.com/examples](https://tour-guide.nforshifu234dev.com/examples)
 - NPM: [npmjs.com/package/nfsfu234-tour-guide](https://www.npmjs.com/package/nfsfu234-tour-guide)
 
 ---
@@ -207,5 +264,5 @@ Copyright © NFORSHIFU234 Dev
 
 **NFSFU234TourGuide** is your no-fluff, high-impact tool for guiding users fast — without bloat or forced dependencies.
 
-> "Lead your users. Don’t just onboard — guide like a boss." 💼  
-> — Built by [NFORSHIFU234 Dev](https://github.com/nforshifu234dev)
+> "Lead your users. Don't just onboard — guide like a boss." 💼  
+> — Built by [NFORSHIFU234 Dev](https://github.com/nforshifu234dev) 🇳🇬
