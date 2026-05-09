@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.1.0](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v1.0.11...v1.1.0) (2026-05-09)
+
+
+### Features
+
+* add opt-out branding badge to welcome screen (showBranding prop) ([#102](https://github.com/nforshifu234dev/nfsfu234-tour-guide/issues/102)) ([93c5e8b](https://github.com/nforshifu234dev/nfsfu234-tour-guide/commit/93c5e8b7a47d7503cdd7b5b9c68e360f02edbbec))
+
 ### [1.0.11](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v1.0.10...v1.0.11) (2026-03-06)
 
 
