@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 
+import Branding from './Branding';
+
 import type {
   ThemeConfig,
   ButtonLabels,
@@ -416,12 +418,14 @@ function Tooltip({
  * - Smart adaptive tooltip positioning (auto-flips when space is limited)
  * - Reactive to browser resize and orientation changes
  * - Clean unmount: removes backdrop & unlocks body scroll when finished
+ * - Optional "Built with NFSFU234TourGuide" branding badge (showBranding prop)
  *
  * @example
  * <Tour
  *   steps={[{ target: '#hero', content: 'Welcome!' }]}
  *   isActive={true}
  *   welcomeScreen={{ enabled: true, title: 'Hello!' }}
+ *   showBranding={false} // opt out of the badge
  * />
  */
 export default function Tour({
@@ -438,6 +442,7 @@ export default function Tour({
   welcomeScreen,
   buttonLabels,
   showProgress = true,
+  showBranding = true,
   className = '',
   overlayClassName = '',
   tooltipClassName = '',
@@ -451,8 +456,7 @@ export default function Tour({
 
   // ── Reactive device detection ───────────────────────────────────────────────
 
-   const [currentDevice, setCurrentDevice] = useState<'mobile' | 'desktop'>(isMobile() ? 'mobile' : 'desktop');
-
+  const [currentDevice, setCurrentDevice] = useState<'mobile' | 'desktop'>(isMobile() ? 'mobile' : 'desktop');
 
   useEffect(() => {
     const checkDevice = () => {
@@ -517,8 +521,7 @@ export default function Tour({
     }
   }, [currentDevice, filteredSteps, currentStep, phase, onStepChange, onComplete]);
 
-  // ── Scroll lock when tour is active (welcome or active phase) ───────────────
-  // Cleanup ALWAYS runs when leaving active state (phase → 'done' or isActive → false)
+  // ── Scroll lock when welcome screen is active ────────────────────────────────
   useEffect(() => {
     if (!mounted || !isActive || phase !== 'welcome') return;
 
@@ -530,10 +533,6 @@ export default function Tour({
     document.body.style.overflow = 'hidden';
 
     return () => {
-      // This cleanup executes reliably when:
-      // - phase changes to 'done'
-      // - isActive becomes false
-      // - component unmounts
       document.body.style.position = '';
       document.body.style.top = '';
       document.body.style.width = '';
@@ -596,7 +595,7 @@ export default function Tour({
         />
       )}
 
-      {/* Welcome Screen — has its own full-screen backdrop built in */}
+      {/* Welcome Screen */}
       {isActive && phase === 'welcome' && welcomeConfig.enabled && (
         <div
           style={{
@@ -604,7 +603,7 @@ export default function Tour({
             inset: 0,
             width: '100vw',
             height: '100vh',
-            backgroundColor: themeConfig.backdrop, // backdrop IS here
+            backgroundColor: themeConfig.backdrop,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -672,6 +671,11 @@ export default function Tour({
                 {welcomeConfig.startButtonText || labels.start}
               </button>
             </div>
+
+            {/* ── Branding badge — opt out with showBranding={false} ── */}
+            {showBranding && (
+              <Branding color={themeConfig.tooltipText} />
+            )}
           </div>
         </div>
       )}

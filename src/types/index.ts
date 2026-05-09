@@ -52,6 +52,8 @@ export interface TourProps {
   welcomeScreen?: WelcomeScreenConfig;
   buttonLabels?: ButtonLabels;
   showProgress?: boolean;
+  /** Show "Built with NFSFU234TourGuide" badge on the welcome screen. Defaults to true. */
+  showBranding?: boolean;
   highlightClassName?: string;
   overlayClassName?: string;
   tooltipClassName?: string;
