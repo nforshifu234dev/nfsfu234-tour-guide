@@ -2,6 +2,39 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.1.0](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v1.0.10...v1.1.0) — NFSFU234 Open Source Day (2026-08-25)
+
+### ⚠️ BREAKING CHANGE
+
+* Package renamed and moved to the `@nfsfu234` scope. Install `@nfsfu234/tour-guide` instead of `nfsfu234-tour-guide`. See [MIGRATION.md](./MIGRATION.md).
+
+### Features
+
+* **Project-wide config** — added `defineConfig()` + `<TourProvider>` so you can set `theme`, `accentColor`, `buttonLabels`, `showBranding`, and other shared defaults once at your app root instead of repeating them on every `<Tour>` instance. Per-instance props still override the shared config.
+
+```ts
+// tour.config.ts
+import { defineConfig } from '@nfsfu234/tour-guide';
+
+export default defineConfig({
+  theme: 'dark',
+  accentColor: '#10b981',
+  showBranding: false,
+});
+```
+
+```tsx
+// app/layout.tsx
+import { TourProvider } from '@nfsfu234/tour-guide';
+import tourConfig from '../tour.config';
+
+export default function RootLayout({ children }) {
+  return <TourProvider config={tourConfig}>{children}</TourProvider>;
+}
+```
+
+Useful for apps running more than one tour (onboarding, feature announcements, settings walkthroughs) that want a single source of truth for branding.
+
 ### [1.0.10](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v1.0.9...v1.0.10) (2026-03-06)
 
 
