@@ -7,3 +7,9 @@ pnpm-lock.yaml
 *.tgz
 *.log
 *.tsbuildinfo
+
+load_folders.py
+changelog-stat.txt
+changelog-full.diff
+file_structure.txt
+file_structure_metadata.txt

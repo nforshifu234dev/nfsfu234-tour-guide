@@ -5,14 +5,14 @@ Plug-and-play React tour guide library — perfect for onboarding, walkthroughs,
 </i></p>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/nfsfu234-tour-guide">
-    <img src="https://img.shields.io/npm/v/nfsfu234-tour-guide?style=for-the-badge" alt="NPM Version">
+  <a href="https://www.npmjs.com/package/@nfsfu234/tour-guide">
+    <img src="https://img.shields.io/npm/v/%40nfsfu234%2Ftour-guide?style=for-the-badge" alt="NPM Version">
   </a>
   <a href="https://github.com/nforshifu234dev/nfsfu234-tour-guide/blob/main/LICENSE">
-    <img src="https://img.shields.io/npm/l/nfsfu234-tour-guide?style=for-the-badge" alt="License">
+    <img src="https://img.shields.io/npm/l/%40nfsfu234%2Ftour-guide?style=for-the-badge" alt="License">
   </a>
-  <a href="https://data.jsdelivr.com/v1/package/npm/nfsfu234-tour-guide">
-    <img src="https://data.jsdelivr.com/v1/package/npm/nfsfu234-tour-guide/badge" alt="jsDelivr">
+  <a href="https://data.jsdelivr.com/v1/package/npm/@nfsfu234/tour-guide">
+    <img src="https://data.jsdelivr.com/v1/package/npm/@nfsfu234/tour-guide/badge" alt="jsDelivr">
   </a>
   <img src="https://img.shields.io/github/last-commit/nforshifu234dev/nfsfu234-tour-guide?style=for-the-badge" alt="Last Commit">
   <img src="https://img.shields.io/github/stars/nforshifu234dev/nfsfu234-tour-guide?style=for-the-badge" alt="Stars">
@@ -37,11 +37,11 @@ Plug-and-play React tour guide library — perfect for onboarding, walkthroughs,
 ## 📦 Installation
 
 ```bash
-npm install nfsfu234-tour-guide
+npm install @nfsfu234/tour-guide
 # or
-yarn add nfsfu234-tour-guide
+yarn add @nfsfu234/tour-guide
 # or
-pnpm add nfsfu234-tour-guide
+pnpm add @nfsfu234/tour-guide
 ```
 
 Only **React** and **React DOM** are required as peer dependencies. Zero other dependencies.
@@ -52,7 +52,7 @@ Only **React** and **React DOM** are required as peer dependencies. Zero other d
 
 ```tsx
 'use client';
-import { Tour } from 'nfsfu234-tour-guide';
+import { Tour } from '@nfsfu234/tour-guide';
 
 
 const steps = [
@@ -84,7 +84,6 @@ export default function MyComponent() {
           enabled: true,
           title: 'Welcome!',
           message: 'Let me show you around.',
-          startButtonText: 'Start Tour',
         }}
         buttonLabels={{
           next: 'Next',
@@ -114,7 +113,7 @@ export default function MyComponent() {
 ## 🧠 Props Reference
 
 | Prop                | Type                               | Description                                      | Default       |
-|---------------------|------------------------------------|--------------------------------------------------|---------------|
+|---------------------|-------------------------------------|--------------------------------------------------|---------------|
 | `tourId`            | `string`                           | Unique tour identifier                           | `'tour-guide'`|
 | `steps`             | `TourStep[]`                       | Array of tour steps (required)                   | —             |
 | `isActive`          | `boolean`                          | Show/hide the tour                               | `true`        |
@@ -139,7 +138,7 @@ export default function MyComponent() {
 ## 🧩 TourStep Interface
 
 | Property        | Type                                      | Description                                 |
-|-----------------|-------------------------------------------|---------------------------------------------|
+|-----------------|---------------------------------------------|---------------------------------------------|
 | `target`        | `string`                                  | CSS selector (e.g. `'#hero'`, `'.sidebar'`) |
 | `content`       | `string`                                  | Main tooltip text                           |
 | `contentMobile` | `string?`                                 | Mobile-specific text (optional)             |
@@ -154,7 +153,7 @@ export default function MyComponent() {
 Pass this to `customTheme` when `theme="custom"`:
 
 | Property        | Type     | Description                           |
-|-----------------|----------|---------------------------------------|
+|-----------------|----------|----------------------------------------|
 | `backdrop`      | `string` | Overlay background color              |
 | `tooltipBg`     | `string` | Tooltip background color              |
 | `tooltipText`   | `string` | Tooltip text color                    |
@@ -201,8 +200,8 @@ Pass this to `customTheme` when `theme="custom"`:
 
 ## ⚖️ How We Compare
 
-| Feature                   | nfsfu234-tour-guide | React Joyride | Shepherd.js   | Intro.js          |
-|---------------------------|:-------------------:|:-------------:|:-------------:|:-----------------:|
+| Feature                   | @nfsfu234/tour-guide | React Joyride | Shepherd.js   | Intro.js          |
+|---------------------------|:---------------------:|:-------------:|:-------------:|:-----------------:|
 | Bundle size (gzipped)     | **~3-4 kB ✦**      | ~13 kB        | ~22 kB        | ~15 kB            |
 | Dependencies              | **0**               | 3             | 0             | 0                 |
 | React peer dep only       | ✅                  | ✅            | ❌            | ❌                |
@@ -242,7 +241,7 @@ If you do leave it on, thank you — it genuinely helps the project grow. 🙏
 - Full Docs: [tour-guide.nforshifu234dev.com](https://tour-guide.nforshifu234dev.com)
 - API Reference: [tour-guide.nforshifu234dev.com/api-reference](https://tour-guide.nforshifu234dev.com/api-reference)
 - Examples: [tour-guide.nforshifu234dev.com/examples](https://tour-guide.nforshifu234dev.com/examples)
-- NPM: [npmjs.com/package/nfsfu234-tour-guide](https://www.npmjs.com/package/nfsfu234-tour-guide)
+- NPM: [npmjs.com/package/@nfsfu234/tour-guide](https://www.npmjs.com/package/@nfsfu234/tour-guide)
 
 ---
 
