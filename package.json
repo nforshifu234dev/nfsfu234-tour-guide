@@ -57,7 +57,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/nforshifu234dev/nfsfu234-tour-guide.git"
+    "url": "git+https://github.com/nforshifu234dev/nfsfu234-tour-guide.git"
   },
   "bugs": {
     "url": "https://github.com/nforshifu234dev/nfsfu234-tour-guide/issues"
