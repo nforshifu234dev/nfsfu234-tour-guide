@@ -2,6 +2,33 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v1.1.0...v2.0.0) (2026-08-25)
+
+
+### ⚠ BREAKING CHANGES
+
+* install @nfsfu234/tour-guide instead of nfsfu234-tour-guide
+
+* feat: add TourProvider and defineConfig for shared tour configuration
+
+- Introduced TourProvider component to provide shared configuration for Tour instances.
+- Added defineConfig function for type-safe tour configuration.
+- Updated index.tsx to export new components and types.
+- Refactored types to include TourConfig and reorganized existing interfaces.
+- Implemented regression tests for tooltip positioning and cleanup behavior.
+- Added tests for TourProvider to ensure configuration precedence and merging behavior.
+- Set up Vitest for testing with jsdom environment and added necessary polyfills.
+
+* chore: update Node.js version to 22 in workflow files
+
+* fix: resolve dependency vulnerabilities via npm audit fix
+
+* fix: migrate npm publish to trusted OIDC publishing and correct links
+
+### Bug Fixes
+
+* sync main with published 1.1.0 and add trusted OIDC publishing ([#104](https://github.com/nforshifu234dev/nfsfu234-tour-guide/issues/104)) ([ae6cdf1](https://github.com/nforshifu234dev/nfsfu234-tour-guide/commit/ae6cdf1ed9b947117ac3185cec94c192b736486a))
+
 ## [1.1.0](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v1.0.10...v1.1.0) — NFSFU234 Open Source Day (2026-08-25)
 
 A major release focused on project-wide configuration, accessibility, positioning reliability, styling flexibility, test coverage, and package/build improvements.
