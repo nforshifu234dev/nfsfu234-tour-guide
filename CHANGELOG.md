@@ -6,7 +6,7 @@ All notable changes to this project will be documented in this file. See [standa
 
 A major release focused on project-wide configuration, accessibility, positioning reliability, styling flexibility, test coverage, and package/build improvements.
 
-This release is part of NFORSHIFU234 Dev's open-source ecosystem and NFSFU234 Open Source Day, alongside [NFSFU234 Form Validation](https://form-validation.nforshifu234dev.com/) and the new [NFSFU234 ShotSweep](https://shotsweep.nforshifu234dev.com/).
+This release is part of NFORSHIFU234 Dev's open-source ecosystem and NFSFU234 Open Source Day, alongside [NFSFU234 Form Validation](https://formvalidation.nforshifu234dev.com/) and the new [NFSFU234 ShotSweep](https://shotsweep.nforshifu234dev.com/).
 
 ### ⚠️ BREAKING CHANGES
 
@@ -132,7 +132,7 @@ This makes it possible to maintain a single source of truth for applications tha
 
 ### Release
 
-Part of NFORSHIFU234 Dev's open-source ecosystem and released for **NFSFU234 Open Source Day** alongside [NFSFU234 Form Validation](https://form-validation.nforshifu234dev.com/) and the new [NFSFU234 ShotSweep](https://shotsweep.nforshifu234dev.com/).
+Part of NFORSHIFU234 Dev's open-source ecosystem and released for **NFSFU234 Open Source Day** alongside [NFSFU234 Form Validation](https://formvalidation.nforshifu234dev.com/) and the new [NFSFU234 ShotSweep](https://shotsweep.nforshifu234dev.com/).
 
 ### [1.0.10](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v1.0.9...v1.0.10) (2026-03-06)
 

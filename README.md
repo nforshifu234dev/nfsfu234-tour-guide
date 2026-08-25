@@ -238,9 +238,9 @@ If you do leave it on, thank you — it genuinely helps the project grow. 🙏
 
 ## 📚 Docs & Extras
 
-- Full Docs: [tour-guide.nforshifu234dev.com](https://tour-guide.nforshifu234dev.com)
-- API Reference: [tour-guide.nforshifu234dev.com/api-reference](https://tour-guide.nforshifu234dev.com/api-reference)
-- Examples: [tour-guide.nforshifu234dev.com/examples](https://tour-guide.nforshifu234dev.com/examples)
+- Full Docs: [tourguide.nforshifu234dev.com](https://tourguide.nforshifu234dev.com)
+- API Reference: [tourguide.nforshifu234dev.com/api-reference](https://tourguide.nforshifu234dev.com/api-reference)
+- Examples: [tourguide.nforshifu234dev.com/examples](https://tourguide.nforshifu234dev.com/examples)
 - NPM: [npmjs.com/package/@nfsfu234/tour-guide](https://www.npmjs.com/package/@nfsfu234/tour-guide)
 
 ---

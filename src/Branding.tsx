@@ -12,7 +12,7 @@ interface BrandingProps {
 export default function Branding({ color = '#ffffff' }: BrandingProps) {
   return (
     <a
-      href="https://tour-guide.nforshifu234dev.com"
+      href="https://tourguide.nforshifu234dev.com"
       target="_blank"
       rel="noopener noreferrer"
       style={{
