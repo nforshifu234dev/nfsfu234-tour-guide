@@ -772,6 +772,11 @@ export default function Tour({
             {showBranding && (
               <Branding color={themeConfig.tooltipText} />
             )}
+
+            {/* ── Branding badge — opt out with showBranding={false} ── */}
+            {showBranding && (
+              <Branding color={themeConfig.tooltipText} />
+            )}
           </div>
         </div>
       )}

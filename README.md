@@ -146,9 +146,8 @@ export default function MyComponent() {
 | `offset`        | `{ x?: number; y?: number }`             | Pixel offset from target                    |
 | `device`        | `'desktop' \| 'mobile' \| 'both'`        | Show step on specific devices only          |
 
----
 
-## 🎨 ThemeConfig Interface
+---
 
 Pass this to `customTheme` when `theme="custom"`:
 
@@ -179,6 +178,9 @@ Pass this to `customTheme` when `theme="custom"`:
   accentColor="#a855f7"
 />
 ```
+
+If you do leave it on, thank you — it genuinely helps the project grow. 🙏
+
 
 ---
 
