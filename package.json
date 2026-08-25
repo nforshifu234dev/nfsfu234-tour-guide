@@ -62,7 +62,7 @@
   "bugs": {
     "url": "https://github.com/nforshifu234dev/nfsfu234-tour-guide/issues"
   },
-  "homepage": "https://tour-guide.nforshifu234dev.com",
+  "homepage": "https://tourguide.nforshifu234dev.com",
   "peerDependencies": {
     "react": "^18.0.0 || ^19.0.0",
     "react-dom": "^18.0.0 || ^19.0.0"
@@ -86,7 +86,7 @@
     "issueUrlFormat": "https://github.com/nforshifu234dev/nfsfu234-tour-guide/issues/{{id}}"
   },
   "engines": {
-    "node": ">=16.0.0"
+    "node": ">=22"
   },
   "allowScripts": {
     "esbuild@0.28.2": true,
