@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 
 import Branding from './Branding';
+import { useTourConfig } from './TourProvider';
 
 import type {
   ThemeConfig,
@@ -176,9 +177,54 @@ function Tooltip({
 }: TooltipProps) {
   const [targetElement, setTargetElement] = useState<HTMLElement | null>(null);
   const [tooltipStyle, setTooltipStyle] = useState<React.CSSProperties>({});
+  // The position actually used after flip-resolution, which can differ from
+  // step.position if the requested side didn't fit. The arrow needs this,
+  // not the originally-requested side, or it points the wrong way whenever
+  // a flip happens.
+  const [resolvedPosition, setResolvedPosition] = useState<'top' | 'bottom' | 'left' | 'right'>(
+    step.position || 'bottom'
+  );
   const tooltipRef = useRef<HTMLDivElement>(null);
+  // First/last focusable elements inside the tooltip - used to wrap Tab/Shift+Tab
+  // so focus can't escape to the page behind an open tour step.
+  const firstFocusableRef = useRef<HTMLButtonElement>(null);
+  const lastFocusableRef = useRef<HTMLButtonElement>(null);
 
   const content = isMobile() && step.contentMobile ? step.contentMobile : step.content;
+
+  /**
+   * Escape closes the tour (same as clicking Skip). Tab/Shift+Tab wrap
+   * between the first and last focusable button instead of escaping to
+   * whatever's behind the backdrop.
+   */
+  const handleTooltipKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      onSkip();
+      return;
+    }
+
+    if (e.key !== 'Tab') return;
+
+    const first = firstFocusableRef.current;
+    const last = lastFocusableRef.current;
+    if (!first || !last) return;
+
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  };
+
+  // Move focus into the tooltip as soon as it mounts, so keyboard users
+  // land somewhere sensible (and Tab/Escape work immediately) without
+  // needing to click first.
+  useEffect(() => {
+    firstFocusableRef.current?.focus();
+  }, [step.target]);
 
   // ── Target attachment, highlighting & visibility observer ───────────────────
   useEffect(() => {
@@ -191,6 +237,11 @@ function Tooltip({
     setTargetElement(target);
 
     target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    // Snapshot whatever inline position/z-index the target already had, so
+    // cleanup can restore it exactly rather than assuming it started blank.
+    const previousInlinePosition = target.style.position;
+    const previousInlineZIndex = target.style.zIndex;
 
     target.style.position = 'relative';
     target.style.zIndex = '9999';
@@ -209,7 +260,11 @@ function Tooltip({
     return () => {
       observer.disconnect();
       target.classList.remove('nfsfu234-tour-active-target');
-      target.style.zIndex = '';
+      // Restore both properties to their pre-tour values (previously only
+      // z-index was reset here, leaving `position: relative` stuck on the
+      // target indefinitely after the tour ended).
+      target.style.position = previousInlinePosition;
+      target.style.zIndex = previousInlineZIndex;
     };
   }, [step.target]);
 
@@ -218,63 +273,92 @@ function Tooltip({
     if (!targetElement || !tooltipRef.current) return;
 
     let rafId: number;
+    let initialRafId: number;
+    let secondPassRafId: number;
+    const EDGE_PADDING = 16;
 
     const updatePosition = () => {
       const targetRect = targetElement.getBoundingClientRect();
       const tooltipRect = tooltipRef.current!.getBoundingClientRect();
-
-      let position = step.position || 'bottom';
-
-      const space = {
-        top: targetRect.top,
-        bottom: window.innerHeight - targetRect.bottom,
-        left: targetRect.left,
-        right: window.innerWidth - targetRect.right,
-      };
-
-      const MIN_SPACE = 40;
-
-      // Flip if preferred side lacks space
-      if (position === 'top' && tooltipRect.height + MIN_SPACE > space.top) position = 'bottom';
-      else if (position === 'bottom' && tooltipRect.height + MIN_SPACE > space.bottom) position = 'top';
-      else if (position === 'left' && tooltipRect.width + MIN_SPACE > space.left) position = 'right';
-      else if (position === 'right' && tooltipRect.width + MIN_SPACE > space.right) position = 'left';
-
-      // Final fallback to safer defaults
-      if ((position === 'top' && space.top < MIN_SPACE) || (position === 'left' && space.left < MIN_SPACE)) {
-        position = position === 'top' ? 'bottom' : 'right';
-      }
-
-      let top = 0;
-      let left = 0;
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
 
       const offsetX = step.offset?.x ?? 0;
       const offsetY = step.offset?.y ?? (isMobile() ? 12 : 16);
 
-      switch (position) {
-        case 'top':
-          top = targetRect.top - tooltipRect.height - offsetY;
-          left = targetRect.left + targetRect.width / 2 - tooltipRect.width / 2 + offsetX;
-          break;
-        case 'bottom':
-          top = targetRect.bottom + offsetY;
-          left = targetRect.left + targetRect.width / 2 - tooltipRect.width / 2 + offsetX;
-          break;
-        case 'left':
-          top = targetRect.top + targetRect.height / 2 - tooltipRect.height / 2 + offsetY;
-          left = targetRect.left - tooltipRect.width - offsetY;
-          break;
-        case 'right':
-          top = targetRect.top + targetRect.height / 2 - tooltipRect.height / 2 + offsetY;
-          left = targetRect.right + offsetY;
-          break;
+      const coordsFor = (pos: 'top' | 'bottom' | 'left' | 'right') => {
+        switch (pos) {
+          case 'top':
+            return {
+              top: targetRect.top - tooltipRect.height - offsetY,
+              left: targetRect.left + targetRect.width / 2 - tooltipRect.width / 2 + offsetX,
+            };
+          case 'bottom':
+            return {
+              top: targetRect.bottom + offsetY,
+              left: targetRect.left + targetRect.width / 2 - tooltipRect.width / 2 + offsetX,
+            };
+          case 'left':
+            return {
+              top: targetRect.top + targetRect.height / 2 - tooltipRect.height / 2 + offsetY,
+              left: targetRect.left - tooltipRect.width - offsetY,
+            };
+          case 'right':
+            return {
+              top: targetRect.top + targetRect.height / 2 - tooltipRect.height / 2 + offsetY,
+              left: targetRect.right + offsetY,
+            };
+        }
+      };
+
+      let position = step.position || 'bottom';
+      let coords = coordsFor(position);
+      const isVertical = position === 'top' || position === 'bottom';
+
+      // Does the CHOSEN side's coordinates actually fit on its primary axis
+      // (the axis that determines which side it visually reads as)?
+      const overflows = (p: { top: number; left: number }, vertical: boolean) =>
+        vertical
+          ? p.top < EDGE_PADDING || p.top + tooltipRect.height > vh - EDGE_PADDING
+          : p.left < EDGE_PADDING || p.left + tooltipRect.width > vw - EDGE_PADDING;
+
+      if (overflows(coords, isVertical)) {
+        const opposite = { top: 'bottom', bottom: 'top', left: 'right', right: 'left' } as const;
+        const flippedPosition = opposite[position];
+        const flippedCoords = coordsFor(flippedPosition)!;
+
+        // Only actually flip if the opposite side genuinely fits better -
+        // previously this decision was made from a coarse "estimated space"
+        // heuristic computed BEFORE knowing the real coordinates, then a
+        // separate, unconditional clamp silently overrode whichever side
+        // had been chosen, dragging a "right"-positioned tooltip back
+        // toward (or past) the target whenever it was near a screen edge -
+        // which is exactly what looked like landing on the wrong side.
+        if (!overflows(flippedCoords, isVertical)) {
+          position = flippedPosition;
+          coords = flippedCoords;
+        }
       }
 
-      // Clamp to viewport edges
-      const vw = window.innerWidth;
-      const vh = window.innerHeight;
-      top = Math.max(16, Math.min(top, vh - tooltipRect.height - 16));
-      left = Math.max(16, Math.min(left, vw - tooltipRect.width - 16));
+      let { top, left } = coords;
+
+      // Clamp only the SECONDARY (cross) axis for viewport safety - e.g. a
+      // left/right tooltip whose vertical center would push it off the top
+      // or bottom of the screen gets nudged without changing which side
+      // it's on.
+      if (isVertical) {
+        left = Math.max(EDGE_PADDING, Math.min(left, vw - tooltipRect.width - EDGE_PADDING));
+      } else {
+        top = Math.max(EDGE_PADDING, Math.min(top, vh - tooltipRect.height - EDGE_PADDING));
+      }
+
+      // Last-resort safety clamp on the primary axis too, only for the
+      // genuinely-impossible case where neither the chosen nor flipped side
+      // fits at all (e.g. a viewport smaller than the tooltip itself) -
+      // prevents fully off-screen rendering without routinely overriding a
+      // choice that already fits, unlike before.
+      top = Math.max(EDGE_PADDING, Math.min(top, vh - tooltipRect.height - EDGE_PADDING));
+      left = Math.max(EDGE_PADDING, Math.min(left, vw - tooltipRect.width - EDGE_PADDING));
 
       setTooltipStyle({
         position: 'fixed',
@@ -282,6 +366,7 @@ function Tooltip({
         left: `${left}px`,
         zIndex: 10000,
       });
+      setResolvedPosition(position);
     };
 
     const debouncedUpdate = () => {
@@ -289,13 +374,26 @@ function Tooltip({
       rafId = requestAnimationFrame(updatePosition);
     };
 
-    debouncedUpdate();
+    // First pass: gets `position: fixed` applied at all (starting from the
+    // default in-flow state). Second pass, scheduled only after the first
+    // has actually committed: re-measures now that fixed positioning is in
+    // effect, since `width: auto` resolves very differently in-flow
+    // (fills available width, up to max-width) versus once fixed
+    // (shrink-wraps to content) - without this second pass, whatever width
+    // the first measurement happened to produce is what the flip/clamp
+    // decision is permanently based on for that step.
+    initialRafId = requestAnimationFrame(() => {
+      updatePosition();
+      secondPassRafId = requestAnimationFrame(updatePosition);
+    });
 
     window.addEventListener('scroll', debouncedUpdate, true);
     window.addEventListener('resize', debouncedUpdate);
 
     return () => {
       cancelAnimationFrame(rafId);
+      cancelAnimationFrame(initialRafId);
+      cancelAnimationFrame(secondPassRafId);
       window.removeEventListener('scroll', debouncedUpdate, true);
       window.removeEventListener('resize', debouncedUpdate);
     };
@@ -306,99 +404,84 @@ function Tooltip({
   return createPortal(
     <div
       ref={tooltipRef}
-      className={tooltipClassName}
+      className={`nfsfu234-tour-tooltip ${tooltipClassName}`.trim()}
+      role="dialog"
+      aria-modal="false"
+      aria-live="polite"
+      aria-label={`Tour step ${stepIndex + 1} of ${totalSteps}`}
+      tabIndex={-1}
+      onKeyDown={handleTooltipKeyDown}
       style={{
         ...tooltipStyle,
-        backgroundColor: themeConfig.tooltipBg,
-        color: themeConfig.tooltipText,
-        border: `1px solid ${themeConfig.tooltipBorder}`,
-        borderRadius: '12px',
-        padding: '20px 24px',
-        maxWidth: '400px',
         width: isMobile() ? '90%' : 'auto',
-        boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
+        ['--nfsfu234-tour-tooltip-bg' as string]: themeConfig.tooltipBg,
+        ['--nfsfu234-tour-tooltip-text' as string]: themeConfig.tooltipText,
+        ['--nfsfu234-tour-tooltip-border' as string]: themeConfig.tooltipBorder,
       }}
     >
-      <p style={{ marginBottom: '16px', fontSize: '15px', lineHeight: '1.6' }}>
+      <p className="nfsfu234-tour-content">
         {content}
       </p>
 
       {showProgress && (
         <div
-          style={{
-            height: '4px',
-            backgroundColor: themeConfig.progressBar,
-            borderRadius: '4px',
-            overflow: 'hidden',
-            marginBottom: '20px',
-          }}
+          role="progressbar"
+          aria-valuenow={stepIndex + 1}
+          aria-valuemin={1}
+          aria-valuemax={totalSteps}
+          className="nfsfu234-tour-progress-track"
+          style={{ ['--nfsfu234-tour-progress-bg' as string]: themeConfig.progressBar }}
         >
           <div
+            className="nfsfu234-tour-progress-fill"
             style={{
-              height: '100%',
               width: `${((stepIndex + 1) / totalSteps) * 100}%`,
-              backgroundColor: accentColor,
-              transition: 'width 0.3s ease',
+              ['--nfsfu234-tour-accent' as string]: accentColor,
             }}
           />
         </div>
       )}
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div className="nfsfu234-tour-actions">
         <button
+          ref={firstFocusableRef}
           onClick={onSkip}
-          style={{
-            background: 'none',
-            border: 'none',
-            color: themeConfig.tooltipText,
-            opacity: 0.7,
-            cursor: 'pointer',
-            fontSize: '14px',
-            padding: '8px 0',
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
-          onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.7')}
+          aria-label="Skip tour"
+          className="nfsfu234-tour-btn nfsfu234-tour-btn-skip"
+          style={{ ['--nfsfu234-tour-tooltip-text' as string]: themeConfig.tooltipText }}
         >
           {buttonLabels.skip}
         </button>
 
-        <div style={{ display: 'flex', gap: '12px' }}>
+        <div className="nfsfu234-tour-actions-right">
           <button
             onClick={onPrevious}
             disabled={stepIndex === 0}
+            aria-label="Previous step"
+            className="nfsfu234-tour-btn nfsfu234-tour-btn-secondary"
             style={{
-              padding: '8px 16px',
-              borderRadius: '8px',
-              border: 'none',
-              backgroundColor: themeConfig.buttonBg,
-              color: themeConfig.buttonText,
-              cursor: stepIndex === 0 ? 'not-allowed' : 'pointer',
               opacity: stepIndex === 0 ? 0.5 : 1,
-              fontSize: '14px',
+              cursor: stepIndex === 0 ? 'not-allowed' : 'pointer',
+              ['--nfsfu234-tour-button-bg' as string]: themeConfig.buttonBg,
+              ['--nfsfu234-tour-button-text' as string]: themeConfig.buttonText,
             }}
           >
             {buttonLabels.previous}
           </button>
 
           <button
+            ref={lastFocusableRef}
             onClick={onNext}
-            style={{
-              padding: '8px 20px',
-              borderRadius: '8px',
-              border: 'none',
-              backgroundColor: accentColor,
-              color: '#ffffff',
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: '500',
-            }}
+            aria-label={stepIndex < totalSteps - 1 ? 'Next step' : 'Finish tour'}
+            className="nfsfu234-tour-btn nfsfu234-tour-btn-primary"
+            style={{ ['--nfsfu234-tour-accent' as string]: accentColor }}
           >
             {stepIndex < totalSteps - 1 ? buttonLabels.next : buttonLabels.finish}
           </button>
         </div>
       </div>
 
-      <div style={getArrowStyle(step.position, themeConfig.tooltipBg)} />
+      <div style={getArrowStyle(resolvedPosition, themeConfig.tooltipBg)} />
     </div>,
     document.body
   );
@@ -432,17 +515,17 @@ export default function Tour({
   tourId = 'nfsfu234-tour-guide',
   steps,
   isActive = true,
-  theme = 'dark',
-  customTheme,
-  accentColor = '#10b981',
+  theme: themeProp,
+  customTheme: customThemeProp,
+  accentColor: accentColorProp,
   onComplete,
   onSkip,
   onStart,
   onStepChange,
   welcomeScreen,
-  buttonLabels,
+  buttonLabels: buttonLabelsProp,
   showProgress = true,
-  showBranding = true,
+  showBranding: showBrandingProp,
   className = '',
   overlayClassName = '',
   tooltipClassName = '',
@@ -450,8 +533,15 @@ export default function Tour({
 }: TourProps) {
   // ── Configuration ────────────────────────────────────────────────────────────
 
+  const globalConfig = useTourConfig();
+
+  const theme = themeProp ?? globalConfig.theme ?? 'dark';
+  const customTheme = customThemeProp ?? globalConfig.customTheme;
+  const accentColor = accentColorProp ?? globalConfig.accentColor ?? '#10b981';
+  const showBranding = showBrandingProp ?? globalConfig.showBranding ?? true;
+
   const welcomeConfig = useMemo(() => ({ ...DEFAULT_WELCOME_SCREEN, ...welcomeScreen }), [welcomeScreen]);
-  const labels = { ...DEFAULT_BUTTON_LABELS, ...buttonLabels };
+  const labels = { ...DEFAULT_BUTTON_LABELS, ...globalConfig.buttonLabels, ...buttonLabelsProp };
   const themeConfig = customTheme || (theme !== 'custom' ? THEME_PRESETS[theme] : THEME_PRESETS.dark);
 
   // ── Reactive device detection ───────────────────────────────────────────────
@@ -486,6 +576,31 @@ export default function Tour({
   const [mounted, setMounted] = useState(false);
 
   const welcomeContainerRef = useRef<HTMLDivElement>(null);
+  const welcomeFirstFocusableRef = useRef<HTMLButtonElement>(null);
+  const welcomeLastFocusableRef = useRef<HTMLButtonElement>(null);
+
+  /** Same Escape-to-skip + Tab-wrap pattern as the step Tooltip, for the welcome dialog. */
+  const handleWelcomeKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      handleSkip();
+      return;
+    }
+
+    if (e.key !== 'Tab') return;
+
+    const first = welcomeFirstFocusableRef.current;
+    const last = welcomeLastFocusableRef.current;
+    if (!first || !last) return;
+
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  };
 
   // ── Lifecycle & reset ────────────────────────────────────────────────────────
 
@@ -541,6 +656,14 @@ export default function Tour({
     };
   }, [mounted, isActive, phase]);
 
+  // Move focus into the welcome dialog as soon as it opens, matching the
+  // Tooltip's same behavior for step-by-step focus management.
+  useEffect(() => {
+    if (isActive && phase === 'welcome') {
+      welcomeFirstFocusableRef.current?.focus();
+    }
+  }, [isActive, phase]);
+
   // ── Navigation handlers ──────────────────────────────────────────────────────
 
   const handleStart = () => {
@@ -581,16 +704,9 @@ export default function Tour({
       {/* Backdrop: hidden during welcome (welcome has its own overlay effect) */}
       {isActive && phase === 'active' && (
         <div
-          className={overlayClassName}
+          className={`nfsfu234-tour-backdrop ${overlayClassName}`.trim()}
           onClick={handleSkip}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            width: '100vw',
-            height: '100vh',
-            backgroundColor: themeConfig.backdrop,
-            zIndex: 9998,
-          }}
+          style={{ ['--nfsfu234-tour-backdrop' as string]: themeConfig.backdrop }}
           aria-hidden="true"
         />
       )}
@@ -598,79 +714,64 @@ export default function Tour({
       {/* Welcome Screen */}
       {isActive && phase === 'welcome' && welcomeConfig.enabled && (
         <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            width: '100vw',
-            height: '100vh',
-            backgroundColor: themeConfig.backdrop,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 9999,
-          }}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="nfsfu234-tour-welcome-title"
+          className="nfsfu234-tour-welcome-backdrop"
+          onKeyDown={handleWelcomeKeyDown}
+          style={{ ['--nfsfu234-tour-backdrop' as string]: themeConfig.backdrop }}
         >
           <div
-            className={tooltipClassName}
+            ref={welcomeContainerRef}
+            className={`nfsfu234-tour-tooltip nfsfu234-tour-welcome-card ${tooltipClassName}`.trim()}
             style={{
-              backgroundColor: themeConfig.tooltipBg,
-              color: themeConfig.tooltipText,
-              border: `1px solid ${themeConfig.tooltipBorder}`,
-              borderRadius: '16px',
               padding: isMobile() ? '24px' : '32px',
-              maxWidth: '500px',
-              width: '90%',
-              boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
+              ['--nfsfu234-tour-tooltip-bg' as string]: themeConfig.tooltipBg,
+              ['--nfsfu234-tour-tooltip-text' as string]: themeConfig.tooltipText,
+              ['--nfsfu234-tour-tooltip-border' as string]: themeConfig.tooltipBorder,
             }}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
-              <h2 style={{ fontSize: '24px', fontWeight: 'bold', margin: 0 }}>
+            <div className="nfsfu234-tour-welcome-header">
+              <h2 id="nfsfu234-tour-welcome-title" className="nfsfu234-tour-welcome-title">
                 {welcomeConfig.title}
               </h2>
               <button
+                ref={welcomeFirstFocusableRef}
                 onClick={handleSkip}
                 aria-label="Close welcome screen"
-                style={{
-                  background: 'none', border: 'none', fontSize: '28px',
-                  lineHeight: 1, cursor: 'pointer',
-                  color: themeConfig.tooltipText, opacity: 0.7, padding: '4px 8px',
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
-                onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.7')}
+                className="nfsfu234-tour-btn nfsfu234-tour-welcome-close"
+                style={{ ['--nfsfu234-tour-tooltip-text' as string]: themeConfig.tooltipText }}
               >
                 ×
               </button>
             </div>
 
-            <p style={{ marginBottom: '24px', fontSize: '15px', lineHeight: '1.6', whiteSpace: 'pre-line' }}>
+            <p className="nfsfu234-tour-welcome-message">
               {welcomeConfig.message}
             </p>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '16px' }}>
+            <div className="nfsfu234-tour-welcome-actions">
               <button
                 onClick={handleSkip}
-                style={{
-                  background: 'none', border: 'none',
-                  color: themeConfig.tooltipText, opacity: 0.8,
-                  cursor: 'pointer', fontSize: '14px', padding: '12px 0',
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
-                onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.8')}
+                className="nfsfu234-tour-btn nfsfu234-tour-btn-skip"
+                style={{ ['--nfsfu234-tour-tooltip-text' as string]: themeConfig.tooltipText }}
               >
                 {labels.skip}
               </button>
               <button
+                ref={welcomeLastFocusableRef}
                 onClick={handleStart}
-                style={{
-                  padding: '12px 24px', borderRadius: '12px', border: 'none',
-                  backgroundColor: accentColor, color: '#ffffff',
-                  cursor: 'pointer', fontSize: '14px', fontWeight: '500',
-                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-                }}
+                className="nfsfu234-tour-btn nfsfu234-tour-welcome-start"
+                style={{ ['--nfsfu234-tour-accent' as string]: accentColor }}
               >
                 {welcomeConfig.startButtonText || labels.start}
               </button>
             </div>
+
+            {/* ── Branding badge — opt out with showBranding={false} ── */}
+            {showBranding && (
+              <Branding color={themeConfig.tooltipText} />
+            )}
 
             {/* ── Branding badge — opt out with showBranding={false} ── */}
             {showBranding && (
@@ -701,6 +802,164 @@ export default function Tour({
       {/* Styles — only injected while tour is active */}
       {isActive && phase !== 'done' && (
         <style>{`
+          /* :where() keeps every rule below at zero specificity, so a
+             consumer's own class (via tooltipClassName/overlayClassName)
+             always wins on the cascade regardless of whether their
+             stylesheet loads before or after this injected <style> tag. */
+
+          :where(.nfsfu234-tour-backdrop) {
+            position: fixed;
+            inset: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: var(--nfsfu234-tour-backdrop, rgba(0, 0, 0, 0.75));
+            z-index: 9998;
+          }
+
+          :where(.nfsfu234-tour-welcome-backdrop) {
+            position: fixed;
+            inset: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: var(--nfsfu234-tour-backdrop, rgba(0, 0, 0, 0.75));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+          }
+
+          :where(.nfsfu234-tour-tooltip) {
+            background-color: var(--nfsfu234-tour-tooltip-bg, #18181b);
+            color: var(--nfsfu234-tour-tooltip-text, #ffffff);
+            border: 1px solid var(--nfsfu234-tour-tooltip-border, #3f3f46);
+            border-radius: 12px;
+            padding: 20px 24px;
+            max-width: 400px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            outline: none;
+          }
+
+          :where(.nfsfu234-tour-welcome-card) {
+            border-radius: 16px;
+            max-width: 500px;
+            width: 90%;
+          }
+
+          :where(.nfsfu234-tour-content) {
+            margin-bottom: 16px;
+            font-size: 15px;
+            line-height: 1.6;
+          }
+
+          :where(.nfsfu234-tour-progress-track) {
+            height: 4px;
+            background-color: var(--nfsfu234-tour-progress-bg, #3f3f46);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 20px;
+          }
+
+          :where(.nfsfu234-tour-progress-fill) {
+            height: 100%;
+            background-color: var(--nfsfu234-tour-accent, #10b981);
+            transition: width 0.3s ease;
+          }
+
+          :where(.nfsfu234-tour-actions) {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+          }
+
+          :where(.nfsfu234-tour-actions-right) {
+            display: flex;
+            gap: 12px;
+          }
+
+          :where(.nfsfu234-tour-btn) {
+            cursor: pointer;
+            font-size: 14px;
+          }
+
+          :where(.nfsfu234-tour-btn-skip) {
+            background: none;
+            border: none;
+            color: var(--nfsfu234-tour-tooltip-text, #ffffff);
+            opacity: 0.7;
+            padding: 8px 0;
+            transition: opacity 0.15s ease;
+          }
+          :where(.nfsfu234-tour-btn-skip:hover) {
+            opacity: 1;
+          }
+
+          :where(.nfsfu234-tour-btn-secondary) {
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: none;
+            background-color: var(--nfsfu234-tour-button-bg, #27272a);
+            color: var(--nfsfu234-tour-button-text, #ffffff);
+          }
+
+          :where(.nfsfu234-tour-btn-primary) {
+            padding: 8px 20px;
+            border-radius: 8px;
+            border: none;
+            background-color: var(--nfsfu234-tour-accent, #10b981);
+            color: #ffffff;
+            font-weight: 500;
+          }
+
+          :where(.nfsfu234-tour-welcome-header) {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 20px;
+          }
+
+          :where(.nfsfu234-tour-welcome-title) {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 0;
+          }
+
+          :where(.nfsfu234-tour-welcome-close) {
+            background: none;
+            border: none;
+            font-size: 28px;
+            line-height: 1;
+            color: var(--nfsfu234-tour-tooltip-text, #ffffff);
+            opacity: 0.7;
+            padding: 4px 8px;
+            transition: opacity 0.15s ease;
+          }
+          :where(.nfsfu234-tour-welcome-close:hover) {
+            opacity: 1;
+          }
+
+          :where(.nfsfu234-tour-welcome-message) {
+            margin-bottom: 24px;
+            font-size: 15px;
+            line-height: 1.6;
+            white-space: pre-line;
+          }
+
+          :where(.nfsfu234-tour-welcome-actions) {
+            display: flex;
+            justify-content: flex-end;
+            gap: 16px;
+          }
+
+          :where(.nfsfu234-tour-welcome-start) {
+            padding: 12px 24px;
+            border-radius: 12px;
+            border: none;
+            background-color: var(--nfsfu234-tour-accent, #10b981);
+            color: #ffffff;
+            font-weight: 500;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+          }
+
           .nfsfu234-tour-active-target {
             position: relative !important;
             z-index: 9999 !important;

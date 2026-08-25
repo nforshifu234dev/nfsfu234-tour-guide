@@ -2,22 +2,139 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
-## [1.1.0](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v1.0.11...v1.1.0) (2026-05-09)
+## [1.1.0](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v1.0.10...v1.1.0) — NFSFU234 Open Source Day (2026-08-25)
 
+A major release focused on project-wide configuration, accessibility, positioning reliability, styling flexibility, test coverage, and package/build improvements.
 
-### Features
+This release is part of NFORSHIFU234 Dev's open-source ecosystem and NFSFU234 Open Source Day, alongside [NFSFU234 Form Validation](https://formvalidation.nforshifu234dev.com/) and the new [NFSFU234 ShotSweep](https://shotsweep.nforshifu234dev.com/).
 
-* add opt-out branding badge to welcome screen (showBranding prop) ([#102](https://github.com/nforshifu234dev/nfsfu234-tour-guide/issues/102)) ([93c5e8b](https://github.com/nforshifu234dev/nfsfu234-tour-guide/commit/93c5e8b7a47d7503cdd7b5b9c68e360f02edbbec))
+### ⚠️ BREAKING CHANGES
 
-### [1.0.11](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v1.0.10...v1.0.11) (2026-03-06)
+* **Package scope changed:** the package is now published as `@nfsfu234/tour-guide` instead of `nfsfu234-tour-guide`. Existing consumers should update their dependency and imports. See [MIGRATION.md](./MIGRATION.md).
+* **Scoped package publishing:** `publishConfig.access` is explicitly set to `public`, allowing the scoped package to be published publicly to npm.
 
+### Added
 
-### Bug Fixes
+#### Project-wide configuration
 
-* removed unwanted files ([#101](https://github.com/nforshifu234dev/nfsfu234-tour-guide/issues/101)) ([b928a35](https://github.com/nforshifu234dev/nfsfu234-tour-guide/commit/b928a35d16f1618fe916f20525f0f6c199089648))
+* Added `defineConfig()` for defining reusable Tour configuration.
+* Added `<TourProvider>` for providing shared configuration to multiple `<Tour>` instances.
+* Added the `TourConfig` type to the public API.
+* Shared configuration can now define defaults such as:
+
+  * `theme`
+  * `accentColor`
+  * `buttonLabels`
+  * `showBranding`
+  * and other supported Tour options.
+* Per-tour props continue to take precedence over values supplied through `TourProvider`.
+
+Example:
+
+```ts
+// tour.config.ts
+import { defineConfig } from '@nfsfu234/tour-guide';
+
+export default defineConfig({
+  theme: 'dark',
+  accentColor: '#10b981',
+  showBranding: false,
+});
+```
+
+```tsx
+// app/layout.tsx
+import { TourProvider } from '@nfsfu234/tour-guide';
+import tourConfig from '../tour.config';
+
+export default function RootLayout({ children }) {
+  return <TourProvider config={tourConfig}>{children}</TourProvider>;
+}
+```
+
+This makes it possible to maintain a single source of truth for applications that use multiple tours, such as onboarding flows, feature announcements, and settings walkthroughs.
+
+#### Accessibility
+
+* Added `Escape` keyboard handling to close both the welcome dialog and an active tour step.
+* Added `Tab` and `Shift+Tab` focus trapping within the open dialog.
+* Focus is automatically moved into the dialog when a welcome screen or tour step opens.
+* Added `role="dialog"` to interactive tour surfaces.
+* Added `aria-modal` to modal tour surfaces.
+* Added `aria-live` announcements for relevant tour content.
+* Added descriptive `aria-label` attributes to the tooltip and welcome screen.
+* Added `role="progressbar"` to the step progress indicator.
+* Added `aria-valuenow`, `aria-valuemin`, and `aria-valuemax` to the progress indicator.
+
+#### Testing
+
+* Added the project's first real automated test suite using Vitest.
+* Added coverage for shared configuration and Tour/provider prop precedence.
+* Added regression coverage for restoring highlighted element styles.
+* Added accessibility and styling tests covering class-name overrides, Escape handling, and focus trapping.
+* Added positioning tests covering viewport-edge flipping, clamping, and arrow direction.
+* Added regression coverage for tooltip re-measurement after mounting.
+* Added `tests/` and `vitest.config.ts`.
+* Replaced the previous no-op test behavior (`"No tests yet, skipping..."`) with an actual test command.
+
+### Fixed
+
+#### Tooltip positioning
+
+* Fixed tooltips rendering on the wrong side of their target, particularly near viewport edges.
+* Fixed an issue where requesting `position: 'right'` could result in the tooltip appearing on the left, bottom-left, or another unexpected position.
+* Fixed the initial positioning calculation occurring before the tooltip had switched to `position: fixed`.
+* Tooltip positioning now performs an additional measurement after fixed positioning has been applied, ensuring the calculation uses the tooltip's actual rendered dimensions.
+* Reworked viewport overflow handling so the requested side is calculated first and only changed when there is a genuine overflow that requires a flip.
+* Cross-axis clamping is now used as a safety measure without unnecessarily forcing the tooltip away from its requested side.
+* Fixed tooltip arrows pointing in the wrong direction after a positioning flip. The arrow now follows the tooltip's actual resolved position rather than the originally requested `step.position`.
+
+#### Highlight cleanup
+
+* Fixed highlighted target elements retaining tour-applied `position` and `z-index` styles after the tour ended.
+* Original inline `position` and `z-index` values are now saved and restored during cleanup instead of being cleared unconditionally.
+* This prevents tours from leaving behind layout or stacking changes after they close.
+
+#### Styling
+
+* Fixed `tooltipClassName` and `overlayClassName` being unable to override theme colors.
+* Theme and custom-theme colors are now exposed through CSS custom properties instead of competing inline color declarations.
+* Base styling uses zero-specificity `:where()` selectors so consumer-provided classes can override the default colors without depending on stylesheet load order.
+* This makes the documented class-based customization behavior work as intended, including utility-class frameworks such as Tailwind CSS.
+
+### Build
+
+* Updated the `tsup` build configuration to enable `--minify`.
+* Enabled `--treeshake` for production builds.
+* Added/updated the `npm run size` workflow for checking package bundle size.
+* Because the production build is now minified and tree-shaken, previously documented bundle-size figures should be considered specific to this build configuration and should be re-verified after future build changes.
+
+### Package and project metadata
+
+* Updated package metadata for the `@nfsfu234` scoped package.
+* Corrected the package description so it no longer references Tailwind CSS or Framer Motion as runtime dependencies/features of the zero-dependency implementation.
+* Updated the package's public exports to include the new configuration and provider APIs.
+* Updated TypeScript types to expose the new configuration functionality.
+* Updated the package publishing configuration for public scoped-package releases.
+
+### Documentation
+
+* Updated the README to document project-wide configuration with `defineConfig()` and `<TourProvider>`.
+* Updated installation and import examples for the `@nfsfu234/tour-guide` package scope.
+* Documented shared configuration and per-instance prop precedence.
+* Updated documentation around styling and customization to reflect the corrected CSS override behavior.
+* Added migration guidance for consumers upgrading from the pre-1.1.0 package name.
+
+### Housekeeping
+
+* Updated the LICENSE copyright holder to `NFORSHIFU LOGICFORGE LTD (operating as NFORSHIFU234 Dev)`, reflecting the legal entity backing the project.
+* Updated project metadata and release documentation to reflect the current NFORSHIFU234 Dev open-source ecosystem.
+
+### Release
+
+Part of NFORSHIFU234 Dev's open-source ecosystem and released for **NFSFU234 Open Source Day** alongside [NFSFU234 Form Validation](https://formvalidation.nforshifu234dev.com/) and the new [NFSFU234 ShotSweep](https://shotsweep.nforshifu234dev.com/).
 
 ### [1.0.10](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v1.0.9...v1.0.10) (2026-03-06)
-
 
 ### Bug Fixes
 
@@ -25,13 +142,11 @@ All notable changes to this project will be documented in this file. See [standa
 
 ### [1.0.9](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v1.0.8...v1.0.9) (2026-02-19)
 
-
 ### Bug Fixes
 
 * only lock body scroll during welcome phase, not during active tour steps ([#96](https://github.com/nforshifu234dev/nfsfu234-tour-guide/issues/96)) ([2cd1b75](https://github.com/nforshifu234dev/nfsfu234-tour-guide/commit/2cd1b7553fe1993d1b01ee6fc0d9d1e362893534))
 
 ### [1.0.8](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v1.0.7...v1.0.8) (2026-02-19)
-
 
 ### Bug Fixes
 
@@ -39,20 +154,17 @@ All notable changes to this project will be documented in this file. See [standa
 
 ### [1.0.7](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v1.0.6...v1.0.7) (2026-02-19)
 
-
 ### Bug Fixes
 
 * eliminate welcome+backdrop overlap by consolidating welcome phase into single full-screen div ([#94](https://github.com/nforshifu234dev/nfsfu234-tour-guide/issues/94)) ([8a0e83b](https://github.com/nforshifu234dev/nfsfu234-tour-guide/commit/8a0e83bed8f708af558b1e74fa7536fde7a5f24a))
 
 ### [1.0.6](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v1.0.5...v1.0.6) (2026-02-19)
 
-
 ### Bug Fixes
 
 * **tour:** ensure complete cleanup of backdrop & body scroll lock on tour end ([#93](https://github.com/nforshifu234dev/nfsfu234-tour-guide/issues/93)) ([23b19eb](https://github.com/nforshifu234dev/nfsfu234-tour-guide/commit/23b19ebeafe07b1e149ca1e983fa591a732f9d8a))
 
 ### [1.0.5](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v1.0.4...v1.0.5) (2026-02-19)
-
 
 ### Bug Fixes
 
@@ -61,13 +173,11 @@ All notable changes to this project will be documented in this file. See [standa
 
 ### [1.0.4](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v1.0.3...v1.0.4) (2026-02-19)
 
-
 ### Bug Fixes
 
 * welcome screen still visible after tour starts ([#91](https://github.com/nforshifu234dev/nfsfu234-tour-guide/issues/91)) ([623bb9b](https://github.com/nforshifu234dev/nfsfu234-tour-guide/commit/623bb9bc2de7b9e7e23f2b2d47d52b2bb2d0d4a1))
 
 ### [1.0.3](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v1.0.2...v1.0.3) (2026-02-19)
-
 
 ### Bug Fixes
 
@@ -75,20 +185,17 @@ All notable changes to this project will be documented in this file. See [standa
 
 ### [1.0.2](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v1.0.1...v1.0.2) (2026-02-19)
 
-
 ### Bug Fixes
 
 * reset phase state when isActive toggles to prevent welcome+tooltip double render ([#89](https://github.com/nforshifu234dev/nfsfu234-tour-guide/issues/89)) ([483209f](https://github.com/nforshifu234dev/nfsfu234-tour-guide/commit/483209fc5e41c31a6d4e182333d68372c924f2d1))
 
 ### [1.0.1](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v1.0.0...v1.0.1) (2026-02-17)
 
-
 ### Bug Fixes
 
 * update module paths in package.json for CommonJS and ES module compatibility ([#88](https://github.com/nforshifu234dev/nfsfu234-tour-guide/issues/88)) ([7fa1964](https://github.com/nforshifu234dev/nfsfu234-tour-guide/commit/7fa1964ad2e87a485c717a2c9c0b6f2d9b9b52ea))
 
 ## [1.0.0](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v0.3.1...v1.0.0) (2026-02-17)
-
 
 ### ⚠ BREAKING CHANGES
 
@@ -101,7 +208,6 @@ All notable changes to this project will be documented in this file. See [standa
 ### [0.3.1](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v0.3.0...v0.3.1) (2026-02-17)
 
 ## [0.3.0](https://github.com/nforshifu234dev/nfsfu234-tour-guide/compare/v0.2.21...v0.3.0) (2026-02-17)
-
 
 ### ⚠ BREAKING CHANGES
 
@@ -317,24 +423,24 @@ All notable changes to this project will be documented in this file. See [standa
 
 ### Added
 
-- Initial release of `nfsfu234-tour-guide`.
-- Support for customizable tour steps with target selectors, content, and positions.
-- Light and dark themes.
-- Welcome screen with customizable content.
-- Progress bar and optional progress dots.
-- Device-specific steps (`desktop`, `mobile`, `both`).
-- TypeScript support with full type definitions.
-- Keyboard navigation (Arrow keys, Enter, Escape).
-- Integration with `framer-motion` for animations and `lucide-react` for icons.
+* Initial release of `nfsfu234-tour-guide`.
+* Support for customizable tour steps with target selectors, content, and positions.
+* Light and dark themes.
+* Welcome screen with customizable content.
+* Progress bar and optional progress dots.
+* Device-specific steps (`desktop`, `mobile`, `both`).
+* TypeScript support with full type definitions.
+* Keyboard navigation (Arrow keys, Enter, Escape).
+* Integration with `framer-motion` for animations and `lucide-react` for icons.
 
 ### Fixed
 
-- N/A (initial release).
+* N/A (initial release).
 
 ### Changed
 
-- N/A (initial release).
+* N/A (initial release).
 
 ### Removed
 
-- N/A (initial release).
+* N/A (initial release).

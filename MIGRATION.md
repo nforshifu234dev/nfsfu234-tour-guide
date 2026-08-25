@@ -1,6 +1,24 @@
-# 🚀 Migration Guide: v0.x → v1.0
+# 🚀 Migration Guide: v0.x → v1.0 (and the new @nfsfu234/tour-guide package)
 
-This guide helps you upgrade from `nfsfu234-tour-guide` v0.2.x to v1.0.
+This guide helps you upgrade from `nfsfu234-tour-guide` v0.2.x to v1.0, **and** move to the new scoped package name `@nfsfu234/tour-guide`.
+
+---
+
+## 📦 Package rename
+
+As of the NFSFU234 Open Source Day launch, this library is now published under the `@nfsfu234` npm scope:
+
+```diff
+- npm install nfsfu234-tour-guide
++ npm install @nfsfu234/tour-guide
+```
+
+```diff
+- import { Tour } from 'nfsfu234-tour-guide'
++ import { Tour } from '@nfsfu234/tour-guide'
+```
+
+The unscoped `nfsfu234-tour-guide` package will continue to receive critical fixes for a deprecation window, but all new features and releases (starting with this v1.0 line) ship under `@nfsfu234/tour-guide`.
 
 ---
 
@@ -11,6 +29,7 @@ This guide helps you upgrade from `nfsfu234-tour-guide` v0.2.x to v1.0.
 - ✅ Zero dependencies (removed framer-motion, lucide-react)
 - ✅ New custom theme system
 - ✅ Improved tooltip positioning with Intersection Observer
+- ✅ Smaller, minified build output
 - ⚠️ Breaking API changes (removed some props, renamed others)
 
 **Upgrade time:** ~15 minutes for most projects
@@ -20,11 +39,11 @@ This guide helps you upgrade from `nfsfu234-tour-guide` v0.2.x to v1.0.
 ## 📦 Installation
 
 ```bash
-npm install nfsfu234-tour-guide@latest
+npm install @nfsfu234/tour-guide@latest
 # or
-yarn add nfsfu234-tour-guide@latest
+yarn add @nfsfu234/tour-guide@latest
 # or
-pnpm add nfsfu234-tour-guide@latest
+pnpm add @nfsfu234/tour-guide@latest
 ```
 
 ---
@@ -158,14 +177,15 @@ npm install lucide-react
 ### Step 1: Update Package
 
 ```bash
-npm install nfsfu234-tour-guide@latest
+npm uninstall nfsfu234-tour-guide
+npm install @nfsfu234/tour-guide@latest
 ```
 
-### Step 2: Update Imports (No Change)
+### Step 2: Update Imports
 
-```tsx
-import Tour from 'nfsfu234-tour-guide';
-// Still works! ✅
+```diff
+- import Tour from 'nfsfu234-tour-guide';
++ import { Tour } from '@nfsfu234/tour-guide';
 ```
 
 ### Step 3: Update Props
@@ -230,56 +250,6 @@ v1.0 has better mobile support. Test:
 
 ---
 
-## 🎨 Theme Migration Examples
-
-### Example 1: Dark Theme
-
-**v0.x:**
-
-```tsx
-<Tour theme="dark" accentColor="#10b981" />
-```
-
-**v1.0:**
-
-```tsx
-<Tour theme="dark" accentColor="#10b981" />
-// Same! ✅
-```
-
-### Example 2: Custom Colors
-
-**v0.x:**
-
-```tsx
-<Tour
-  theme="dark"
-  overlayClassName="bg-purple-900/80"
-  tooltipClassName="bg-purple-950 border-purple-700"
-/>
-```
-
-**v1.0:**
-
-```tsx
-<Tour
-  theme="custom"
-  customTheme={{
-    backdrop: 'rgba(88, 28, 135, 0.8)', // purple-900/80
-    tooltipBg: '#3b0764',                // purple-950
-    tooltipText: '#ffffff',
-    tooltipBorder: '#7e22ce',            // purple-700
-    buttonBg: '#581c87',
-    buttonText: '#ffffff',
-    progressBar: '#6b21a8',
-    highlightRing: 'rgba(168, 85, 247, 0.6)',
-  }}
-  accentColor="#a855f7"
-/>
-```
-
----
-
 ## 🐛 Common Issues
 
 ### Issue 1: "tourDots is not a valid prop"
@@ -300,22 +270,17 @@ v1.0 has better mobile support. Test:
 + { target: '#hero', position: 'bottom' }
 ```
 
-### Issue 3: Tooltip appears in wrong position
+### Issue 3: Module not found after upgrading
 
-**Cause:** v1.0 uses new positioning logic  
+**Cause:** The package moved to the `@nfsfu234` scope.
 **Solution:**
 
-1. Ensure target elements exist in DOM before tour starts
-2. Try different `position` values
-3. Use `offset` to fine-tune:
-
-```tsx
-{
-  target: '#button',
-  position: 'bottom',
-  offset: { y: 20 }, // 20px extra spacing
-}
+```bash
+npm uninstall nfsfu234-tour-guide
+npm install @nfsfu234/tour-guide
 ```
+
+Then update every import from `'nfsfu234-tour-guide'` to `'@nfsfu234/tour-guide'`.
 
 ### Issue 4: Custom styles not applying
 
@@ -337,7 +302,8 @@ v1.0 has better mobile support. Test:
 
 | Feature | v0.x | v1.0 |
 |---------|------|------|
-| **Bundle Size** | ~45KB | ~10KB ✨ |
+| **Package name** | `nfsfu234-tour-guide` | `@nfsfu234/tour-guide` ✨ |
+| **Bundle Size** | ~45KB | ~3-4 kB gzipped ✨ |
 | **Dependencies** | 2 (framer-motion, lucide-react) | 0 ✨ |
 | **Themes** | Light, Dark | Light, Dark, Custom ✨ |
 | **Mobile Support** | Basic | Enhanced ✨ |
@@ -351,7 +317,8 @@ v1.0 has better mobile support. Test:
 
 ## 🎯 Migration Checklist
 
-- [ ] Update package to `^1.0.0`
+- [ ] Uninstall `nfsfu234-tour-guide`, install `@nfsfu234/tour-guide@^1.0.0`
+- [ ] Update every import path to `@nfsfu234/tour-guide`
 - [ ] Replace `tourDots` with `showProgress`
 - [ ] Remove `tourDotsClassName`
 - [ ] Remove `animation` and `animationDuration`
@@ -362,45 +329,6 @@ v1.0 has better mobile support. Test:
 - [ ] Test on desktop and mobile
 - [ ] Remove `framer-motion` and `lucide-react` if not used elsewhere
 - [ ] Update any custom CSS targeting tour classes
-
----
-
-## 💡 New Features to Explore
-
-### 1. Device-Specific Steps
-
-```tsx
-const steps = [
-  { target: '#desktop-nav', device: 'desktop' }, // Desktop only
-  { target: '#mobile-menu', device: 'mobile' },  // Mobile only
-  { target: '#hero', device: 'both' },            // Both devices
-];
-```
-
-### 2. Mobile-Specific Content
-
-```tsx
-{
-  target: '#features',
-  content: 'Here are our comprehensive feature set with detailed explanations.',
-  contentMobile: 'Check out our features!', // Shorter for mobile
-}
-```
-
-### 3. Custom Themes
-
-```tsx
-<Tour
-  theme="custom"
-  customTheme={{
-    backdrop: 'rgba(15, 23, 42, 0.95)',
-    tooltipBg: '#0f172a',
-    tooltipText: '#e2e8f0',
-    highlightRing: 'rgba(239, 68, 68, 0.6)', // Red highlight
-  }}
-  accentColor="#ef4444"
-/>
-```
 
 ---
 

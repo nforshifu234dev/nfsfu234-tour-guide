@@ -1,7 +1,7 @@
 {
-  "name": "nfsfu234-tour-guide",
+  "name": "@nfsfu234/tour-guide",
   "version": "1.1.0",
-  "description": "A plug-and-play React component for creating customizable onboarding tours with tooltips, modals, and smooth user guidance. Built with Tailwind CSS and supports dark mode, Framer Motion animations, and full control over step logic.",
+  "description": "A plug-and-play React component for creating customizable onboarding tours with tooltips, modals, and smooth user guidance. Zero-dependency, dark mode support, and full control over step logic.",
   "type": "module",
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",
@@ -20,13 +20,17 @@
     "README.md",
     "LICENSE"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
-    "build:js": "tsup src/index.tsx --format esm,cjs --dts --clean",
+    "build:js": "tsup src/index.tsx --format esm,cjs --dts --clean --minify --treeshake",
     "build:css": "cpy \"src/tailwind.css\" dist/tailwind.css",
     "build": "npm run build:js && npm run build:css",
+    "size": "npm run build && du -sh dist && gzip -c dist/index.mjs | wc -c",
     "prepare": "npm run build",
     "prepublishOnly": "npm run build",
-    "test": "echo \"No tests yet, skipping...\" && exit 0",
+    "test": "vitest run",
     "lint": "eslint 'src/**/*.{ts,tsx}' --fix",
     "release": "standard-version"
   },
@@ -58,7 +62,7 @@
   "bugs": {
     "url": "https://github.com/nforshifu234dev/nfsfu234-tour-guide/issues"
   },
-  "homepage": "https://tour-guide.nforshifu234dev.com",
+  "homepage": "https://tourguide.nforshifu234dev.com",
   "peerDependencies": {
     "react": "^18.0.0 || ^19.0.0",
     "react-dom": "^18.0.0 || ^19.0.0"
@@ -70,13 +74,22 @@
     "cpy-cli": "^7.0.0",
     "standard-version": "^9.5.0",
     "tsup": "^8.5.0",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "vitest": "^4.1.10",
+    "jsdom": "^27.1.1",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@vitejs/plugin-react": "^5.1.1"
   },
   "release": {
     "commitUrlFormat": "https://github.com/nforshifu234dev/nfsfu234-tour-guide/commit/{{hash}}",
     "issueUrlFormat": "https://github.com/nforshifu234dev/nfsfu234-tour-guide/issues/{{id}}"
   },
   "engines": {
-    "node": ">=16.0.0"
+    "node": ">=22"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true,
+    "esbuild@0.25.12": true
   }
 }
